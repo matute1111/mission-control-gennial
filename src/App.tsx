@@ -61,7 +61,7 @@ export default function App() {
   return (
     <div className="flex min-h-screen bg-stone-50">
       <Sidebar page={page} setPage={setPage} user={user} counts={counts} onLogout={logout} />
-      <main className="flex-1 p-8 overflow-auto max-h-screen">
+      <main className="flex-1 pt-16 sm:pt-0 pb-20 sm:pb-0 p-4 sm:p-8 overflow-auto max-h-screen">
         {page === "dashboard" && <Dashboard projects={projects} tasks={tasks} proposals={proposals} activities={activities} />}
         {page === "projects" && <Projects projects={projects} tasks={tasks} refresh={fetchAll} />}
         {page === "tasks" && <Tasks tasks={tasks} projects={projects} refresh={fetchAll} />}

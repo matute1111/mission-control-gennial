@@ -60,7 +60,8 @@ export function Tasks({ tasks, projects, refresh }: Props) {
         ))}
       </div>
 
-      <Card>
+      {/* Desktop Table */}
+      <Card className="hidden sm:block">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-stone-100 text-stone-500 text-xs">
@@ -98,6 +99,36 @@ export function Tasks({ tasks, projects, refresh }: Props) {
           </tbody>
         </table>
       </Card>
+
+      {/* Mobile Cards */}
+      <div className="sm:hidden space-y-3">
+        {filtered.map(t => (
+          <Card 
+            key={t.id}
+            className="p-4 cursor-pointer hover:bg-stone-50 transition"
+            onClick={() => setSelectedTask(t)}
+          >
+            <div className="flex items-start justify-between mb-2">
+              <div className="font-medium text-stone-900 flex-1 pr-2">{t.title}</div>
+              <Badge value={t.status} />
+            </div>
+            {t.description && <div className="text-xs text-stone-500 mb-2 line-clamp-2">{t.description}</div>}
+            {t.blocked_reason && <div className="text-xs text-red-500 mb-2">{t.blocked_reason}</div>}
+            <div className="flex items-center justify-between text-xs">
+              <div className="flex items-center gap-2">
+                <span className="text-stone-500">{projName(t.project_id) || "Sin proyecto"}</span>
+                <Badge value={t.priority} />
+              </div>
+              <span className="text-stone-400">{t.assigned_to || "pending"}</span>
+            </div>
+            <div className="flex gap-2 mt-3" onClick={e => e.stopPropagation()}>
+              {t.status === "pending" && <Button variant="outline" size="sm" className="flex-1 text-blue-600" onClick={() => claim(t.id)}>Tomar</Button>}
+              {["pending", "in_progress", "review"].includes(t.status) && <Button variant="outline" size="sm" className="flex-1 text-emerald-600" onClick={() => complete(t.id)}>Completar</Button>}
+            </div>
+          </Card>
+        ))}
+        {filtered.length === 0 && <div className="text-center text-stone-400 py-8">Sin tareas</div>}
+      </div>
 
       <Dialog open={show} onClose={() => setShow(false)}>
         <DialogTitle>Nueva tarea</DialogTitle>

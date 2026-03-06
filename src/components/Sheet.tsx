@@ -21,7 +21,7 @@ export function Sheet({ open, onClose, children, title }: SheetProps) {
       
       {/* Sheet */}
       <div className={cn(
-        "fixed right-0 top-0 h-full w-full max-w-xl bg-white shadow-2xl z-50",
+        "fixed right-0 top-0 h-full w-full sm:max-w-xl bg-white shadow-2xl z-50",
         "transform transition-transform duration-300 ease-in-out",
         "flex flex-col"
       )}>

@@ -149,8 +149,8 @@ export function Projects({ projects, tasks, refresh }: Props) {
         ))}
       </div>
 
-      <Card className="divide-y divide-stone-50">
-        {filteredMacros.length === 0 && <div className="px-5 py-8 text-center text-stone-400 text-sm">Sin proyectos</div>}
+      <Card className="divide-y divide-stone-50 overflow-hidden">
+        {filteredMacros.length === 0 && <div className="px-4 sm:px-5 py-8 text-center text-stone-400 text-sm">Sin proyectos</div>}
         
         {filteredMacros.map(macro => {
           const macroFeatures = featureProjects.filter(m => m.parent_project_id === macro.id)
