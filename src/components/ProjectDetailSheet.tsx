@@ -17,6 +17,7 @@ import {
   TrendingUp,
   Link as LinkIcon,
   Folder,
+  FolderOpen,
   Edit3,
   Save,
   BookOpen,
@@ -28,11 +29,12 @@ import {
 interface ProjectDetailSheetProps {
   project: Project | null
   tasks: Task[]
+  projects?: Project[]  // Todos los proyectos para mostrar jerarquía
   onClose: () => void
   onUpdate?: () => void
 }
 
-export function ProjectDetailSheet({ project, tasks, onClose, onUpdate }: ProjectDetailSheetProps) {
+export function ProjectDetailSheet({ project, tasks, projects = [], onClose, onUpdate }: ProjectDetailSheetProps) {
   const [updates, setUpdates] = useState<ProjectUpdate[]>([])
   const [isEditing, setIsEditing] = useState(false)
   const [brief, setBrief] = useState(project?.brief || "")
@@ -40,6 +42,12 @@ export function ProjectDetailSheet({ project, tasks, onClose, onUpdate }: Projec
   const [currentStatus, setCurrentStatus] = useState(project?.current_status || "")
   const [newUpdate, setNewUpdate] = useState("")
   const [updateType, setUpdateType] = useState<ProjectUpdate['update_type']>('progress')
+  const [childProjects, setChildProjects] = useState<Project[]>([])
+
+  // Encontrar proyecto padre si existe
+  const parentProject = project?.parent_project_id 
+    ? projects.find(p => p.id === project.parent_project_id)
+    : null
 
   useEffect(() => {
     if (project) {
@@ -47,8 +55,16 @@ export function ProjectDetailSheet({ project, tasks, onClose, onUpdate }: Projec
       setRoadmap(project.roadmap || "")
       setCurrentStatus(project.current_status || "")
       fetchUpdates()
+      
+      // Si es macro proyecto, obtener sus sub-proyectos
+      if (project.project_type === 'macro' || !project.parent_project_id) {
+        const children = projects.filter(p => p.parent_project_id === project.id)
+        setChildProjects(children)
+      } else {
+        setChildProjects([])
+      }
     }
-  }, [project])
+  }, [project, projects])
 
   const fetchUpdates = async () => {
     if (!project) return
@@ -138,6 +154,54 @@ export function ProjectDetailSheet({ project, tasks, onClose, onUpdate }: Projec
             {project.status}
           </span>
         </div>
+
+        {/* JERARQUÍA - Macro/Sub-proyectos */}
+        {(parentProject || childProjects.length > 0) && (
+          <Card className="bg-violet-50 border-violet-100">
+            <div className="flex items-center gap-2 mb-3">
+              <FolderOpen className="w-5 h-5 text-violet-600" />
+              <h4 className="text-sm font-semibold text-violet-900">🗂️ Jerarquía</h4>
+            </div>
+            
+            {/* Si es micro, mostrar macro padre */}
+            {parentProject && (
+              <div className="mb-3">
+                <p className="text-xs text-violet-600 mb-1">Parte del macro proyecto:</p>
+                <div className="flex items-center gap-2 p-2 bg-white rounded-lg border border-violet-200">
+                  <FolderOpen className="w-4 h-4 text-blue-500" />
+                  <span className="text-sm font-medium text-stone-800">{parentProject.name}</span>
+                  <Badge value={parentProject.status} />
+                </div>
+              </div>
+            )}
+            
+            {/* Si es macro, mostrar sub-proyectos */}
+            {childProjects.length > 0 && (
+              <div>
+                <p className="text-xs text-violet-600 mb-1">Sub-proyectos ({childProjects.length}):</p>
+                <div className="space-y-2">
+                  {childProjects.map(child => {
+                    const childTaskCount = tasks.filter(t => t.project_id === child.id).length
+                    return (
+                      <div key={child.id} className="flex items-center justify-between p-2 bg-white rounded-lg border border-violet-200">
+                        <div className="flex items-center gap-2">
+                          <Folder className="w-4 h-4 text-amber-500" />
+                          <span className="text-sm text-stone-700">{child.name}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {childTaskCount > 0 && (
+                            <span className="text-xs text-stone-400">{childTaskCount} tareas</span>
+                          )}
+                          <Badge value={child.status} />
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+          </Card>
+        )}
 
         {/* BRIEF - Resumen General */}
         <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-100">
