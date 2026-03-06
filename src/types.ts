@@ -16,6 +16,12 @@ export interface Project {
   created_by: string
   created_at: string
   updated_at: string
+  brief?: string           // Resumen general del proyecto
+  roadmap?: string         // Qué va a pasar / plan
+  current_status?: string  // Estado actual / qué se está haciendo ahora
+  github_url?: string      // URL del repo
+  vercel_url?: string      // URL del deploy
+  docs_url?: string        // URL de documentación
 }
 
 export interface Task {
@@ -51,6 +57,15 @@ export interface Activity {
   action: string
   reasoning: string
   result: string
+  created_at: string
+}
+
+export interface ProjectUpdate {
+  id: string
+  project_id: string
+  update_type: 'milestone' | 'blocker' | 'decision' | 'progress' | 'note'
+  content: string
+  created_by: string
   created_at: string
 }
 

@@ -96,6 +96,7 @@ export function Projects({ projects, tasks, refresh }: Props) {
         project={selectedProject}
         tasks={tasks}
         onClose={() => setSelectedProject(null)}
+        onUpdate={refresh}
       />
     </div>
   )

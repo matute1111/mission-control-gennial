@@ -1,8 +1,11 @@
+import { useState, useEffect } from "react"
 import { Sheet } from "./Sheet"
 import { Badge } from "./Badge"
 import { Button } from "./Button"
 import { Card } from "./Card"
-import type { Project, Task } from "@/types"
+import { Textarea } from "./Textarea"
+import { supabase } from "@/lib/supabase"
+import type { Project, Task, ProjectUpdate } from "@/types"
 import { 
   ExternalLink, 
   Github, 
@@ -13,16 +16,72 @@ import {
   Target,
   TrendingUp,
   Link as LinkIcon,
-  Folder
+  Folder,
+  Edit3,
+  Save,
+  BookOpen,
+  Map,
+  Activity,
+  Plus
 } from "lucide-react"
 
 interface ProjectDetailSheetProps {
   project: Project | null
   tasks: Task[]
   onClose: () => void
+  onUpdate?: () => void
 }
 
-export function ProjectDetailSheet({ project, tasks, onClose }: ProjectDetailSheetProps) {
+export function ProjectDetailSheet({ project, tasks, onClose, onUpdate }: ProjectDetailSheetProps) {
+  const [updates, setUpdates] = useState<ProjectUpdate[]>([])
+  const [isEditing, setIsEditing] = useState(false)
+  const [brief, setBrief] = useState(project?.brief || "")
+  const [roadmap, setRoadmap] = useState(project?.roadmap || "")
+  const [currentStatus, setCurrentStatus] = useState(project?.current_status || "")
+  const [newUpdate, setNewUpdate] = useState("")
+  const [updateType, setUpdateType] = useState<ProjectUpdate['update_type']>('progress')
+
+  useEffect(() => {
+    if (project) {
+      setBrief(project.brief || "")
+      setRoadmap(project.roadmap || "")
+      setCurrentStatus(project.current_status || "")
+      fetchUpdates()
+    }
+  }, [project])
+
+  const fetchUpdates = async () => {
+    if (!project) return
+    const { data } = await supabase
+      .from("project_updates")
+      .select("*")
+      .eq("project_id", project.id)
+      .order("created_at", { ascending: false })
+    if (data) setUpdates(data)
+  }
+
+  const saveBrief = async () => {
+    if (!project) return
+    await supabase
+      .from("projects")
+      .update({ brief, roadmap, current_status: currentStatus })
+      .eq("id", project.id)
+    setIsEditing(false)
+    onUpdate?.()
+  }
+
+  const addUpdate = async () => {
+    if (!project || !newUpdate.trim()) return
+    await supabase.from("project_updates").insert({
+      project_id: project.id,
+      update_type: updateType,
+      content: newUpdate,
+      created_by: "matias"
+    })
+    setNewUpdate("")
+    fetchUpdates()
+  }
+
   if (!project) return null
 
   const projectTasks = tasks.filter(t => t.project_id === project.id)
@@ -31,25 +90,6 @@ export function ProjectDetailSheet({ project, tasks, onClose }: ProjectDetailShe
     ? Math.round((completedTasks.length / projectTasks.length) * 100) 
     : 0
 
-  // Extraer URLs de la descripción
-  const extractUrls = (text: string) => {
-    const urlRegex = /(https?:\/\/[^\s]+)/g
-    return text?.match(urlRegex) || []
-  }
-
-  const urls = extractUrls(project.description || "")
-
-  // Detectar tipo de URL
-  const getUrlType = (url: string) => {
-    if (url.includes("github.com")) return { icon: Github, label: "GitHub", color: "text-gray-700" }
-    if (url.includes("vercel.app") || url.includes("vercel.com")) return { icon: ExternalLink, label: "Vercel", color: "text-black" }
-    if (url.includes("supabase.com")) return { icon: ExternalLink, label: "Supabase", color: "text-emerald-600" }
-    if (url.includes("lovable.dev")) return { icon: ExternalLink, label: "Lovable", color: "text-purple-600" }
-    if (url.includes("docs.google.com")) return { icon: FileText, label: "Documento", color: "text-blue-600" }
-    return { icon: LinkIcon, label: "Link", color: "text-stone-600" }
-  }
-
-  // Formatear fecha
   const formatDate = (dateStr: string) => {
     if (!dateStr) return "N/A"
     return new Date(dateStr).toLocaleString("es-AR", {
@@ -70,8 +110,19 @@ export function ProjectDetailSheet({ project, tasks, onClose }: ProjectDetailShe
     }
   }
 
+  const getUpdateTypeColor = (type: string) => {
+    switch (type) {
+      case 'milestone': return 'bg-emerald-100 text-emerald-700'
+      case 'blocker': return 'bg-red-100 text-red-700'
+      case 'decision': return 'bg-blue-100 text-blue-700'
+      case 'progress': return 'bg-amber-100 text-amber-700'
+      case 'note': return 'bg-stone-100 text-stone-700'
+      default: return 'bg-stone-100 text-stone-700'
+    }
+  }
+
   return (
-    <Sheet open={!!project} onClose={onClose} title="Detalle de Proyecto">
+    <Sheet open={!!project} onClose={onClose} title="📋 Brief del Proyecto">
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-start justify-between">
@@ -87,49 +138,155 @@ export function ProjectDetailSheet({ project, tasks, onClose }: ProjectDetailShe
           </span>
         </div>
 
-        {/* Descripción */}
-        {project.description && (
-          <Card className="bg-stone-50">
-            <div className="flex items-start gap-3">
-              <FileText className="w-5 h-5 text-stone-400 mt-0.5" />
-              <div>
-                <h4 className="text-sm font-medium text-stone-700 mb-2">Descripción</h4>
-                <p className="text-sm text-stone-600 whitespace-pre-wrap">{project.description}</p>
-              </div>
+        {/* BRIEF - Resumen General */}
+        <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-100">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <BookOpen className="w-5 h-5 text-blue-600" />
+              <h4 className="text-sm font-semibold text-blue-900">📝 BRIEF - Resumen General</h4>
             </div>
-          </Card>
-        )}
+            <button 
+              onClick={() => setIsEditing(!isEditing)}
+              className="p-1 hover:bg-blue-100 rounded transition"
+            >
+              {isEditing ? <Save className="w-4 h-4 text-blue-600" /> : <Edit3 className="w-4 h-4 text-blue-600" />}
+            </button>
+          </div>
+          
+          {isEditing ? (
+            <div className="space-y-3">
+              <Textarea 
+                placeholder="Resumen general del proyecto..."
+                value={brief}
+                onChange={e => setBrief(e.target.value)}
+                className="min-h-[80px] text-sm"
+              />
+              <Button size="sm" onClick={saveBrief} className="w-full">
+                <Save className="w-4 h-4 mr-1" /> Guardar Brief
+              </Button>
+            </div>
+          ) : (
+            <p className="text-sm text-blue-800 whitespace-pre-wrap">
+              {brief || "Sin brief aún. Edita para agregar el resumen general del proyecto."}
+            </p>
+          )}
+        </Card>
 
-        {/* Links del proyecto */}
-        {urls.length > 0 && (
-          <div>
-            <h4 className="text-sm font-medium text-stone-700 mb-3 flex items-center gap-2">
-              <LinkIcon className="w-4 h-4" />
-              Links del Proyecto
-            </h4>
-            <div className="space-y-2">
-              {urls.map((url, idx) => {
-                const { icon: Icon, label, color } = getUrlType(url)
-                return (
-                  <a
-                    key={idx}
-                    href={url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-3 p-3 bg-white border border-stone-200 rounded-lg hover:border-stone-300 hover:bg-stone-50 transition group"
-                  >
-                    <Icon className={`w-5 h-5 ${color}`} />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-stone-700">{label}</p>
-                      <p className="text-xs text-stone-400 truncate">{url}</p>
+        {/* ROADMAP - Qué va a pasar */}
+        <Card className="bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-100">
+          <div className="flex items-center gap-2 mb-3">
+            <Map className="w-5 h-5 text-emerald-600" />
+            <h4 className="text-sm font-semibold text-emerald-900">🗺️ ROADMAP - Qué va a pasar</h4>
+          </div>
+          
+          {isEditing ? (
+            <Textarea 
+              placeholder="1. Fase 1: ...\n2. Fase 2: ...\n3. Fase 3: ..."
+              value={roadmap}
+              onChange={e => setRoadmap(e.target.value)}
+              className="min-h-[100px] text-sm"
+            />
+          ) : (
+            <div className="text-sm text-emerald-800 whitespace-pre-wrap">
+              {roadmap ? (
+                <div className="space-y-2">
+                  {roadmap.split('\n').map((line, i) => line.trim() && (
+                    <div key={i} className="flex items-start gap-2">
+                      <span className="text-emerald-500 font-bold">•</span>
+                      <span>{line.replace(/^[-•\d.)\s]+/, '')}</span>
                     </div>
-                    <ExternalLink className="w-4 h-4 text-stone-300 group-hover:text-stone-500" />
-                  </a>
-                )
-              })}
+                  ))}
+                </div>
+              ) : (
+                <p className="text-emerald-600 italic">Sin roadmap definido. Edita para agregar el plan.</p>
+              )}
+            </div>
+          )}
+        </Card>
+
+        {/* CURRENT STATUS - Qué se está haciendo ahora */}
+        <Card className="bg-gradient-to-br from-amber-50 to-orange-50 border-amber-100">
+          <div className="flex items-center gap-2 mb-3">
+            <Activity className="w-5 h-5 text-amber-600" />
+            <h4 className="text-sm font-semibold text-amber-900">▶️ ESTADO ACTUAL - Qué se está haciendo</h4>
+          </div>
+          
+          {isEditing ? (
+            <Textarea 
+              placeholder="Ahora mismo estamos trabajando en..."
+              value={currentStatus}
+              onChange={e => setCurrentStatus(e.target.value)}
+              className="min-h-[60px] text-sm"
+            />
+          ) : (
+            <p className="text-sm text-amber-800 whitespace-pre-wrap">
+              {currentStatus || "No hay estado actual definido. Edita para indicar qué se está haciendo ahora."}
+            </p>
+          )}
+        </Card>
+
+        {/* HISTORIAL - Qué se fue haciendo */}
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Clock className="w-4 h-4 text-stone-500" />
+              <h4 className="text-sm font-semibold text-stone-700">📜 HISTORIAL - Qué se fue haciendo</h4>
+            </div>
+            <span className="text-xs text-stone-400">{updates.length} actualizaciones</span>
+          </div>
+
+          {/* Agregar nueva actualización */}
+          <div className="mb-4 p-3 bg-stone-50 rounded-lg border border-stone-200">
+            <div className="flex gap-2 mb-2">
+              <select 
+                value={updateType}
+                onChange={e => setUpdateType(e.target.value as ProjectUpdate['update_type'])}
+                className="text-xs border rounded px-2 py-1 bg-white"
+              >
+                <option value="progress">🟡 Progreso</option>
+                <option value="milestone">🟢 Hitos</option>
+                <option value="blocker">🔴 Bloqueo</option>
+                <option value="decision">🔵 Decisión</option>
+                <option value="note">⚪ Nota</option>
+              </select>
+            </div>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={newUpdate}
+                onChange={e => setNewUpdate(e.target.value)}
+                placeholder="Agregar actualización..."
+                className="flex-1 text-sm border rounded px-3 py-2"
+                onKeyDown={e => e.key === 'Enter' && addUpdate()}
+              />
+              <Button size="sm" onClick={addUpdate}>
+                <Plus className="w-4 h-4" />
+              </Button>
             </div>
           </div>
-        )}
+
+          {/* Lista de actualizaciones */}
+          <div className="space-y-2 max-h-60 overflow-y-auto">
+            {updates.map(update => (
+              <div key={update.id} className="flex items-start gap-3 p-3 bg-white border border-stone-100 rounded-lg">
+                <span className={`px-2 py-0.5 rounded text-xs font-medium ${getUpdateTypeColor(update.update_type)}`}>
+                  {update.update_type}
+                </span>
+                <div className="flex-1">
+                  <p className="text-sm text-stone-700">{update.content}</p>
+                  <p className="text-xs text-stone-400 mt-1">
+                    {formatDate(update.created_at)} • {update.created_by}
+                  </p>
+                </div>
+              </div>
+            ))}
+            {updates.length === 0 && (
+              <p className="text-center text-sm text-stone-400 py-4">
+                Sin actualizaciones aún. Agrega la primera arriba.
+              </p>
+            )}
+          </div>
+        </div>
 
         {/* Progreso */}
         <Card>
@@ -154,11 +311,11 @@ export function ProjectDetailSheet({ project, tasks, onClose }: ProjectDetailShe
           <div className="grid grid-cols-3 gap-4 text-center">
             <div className="p-3 bg-stone-50 rounded-lg">
               <p className="text-2xl font-bold text-stone-900">{projectTasks.length}</p>
-              <p className="text-xs text-stone-500">Tareas Total</p>
+              <p className="text-xs text-stone-500">Tareas</p>
             </div>
             <div className="p-3 bg-emerald-50 rounded-lg">
               <p className="text-2xl font-bold text-emerald-700">{completedTasks.length}</p>
-              <p className="text-xs text-emerald-600">Completadas</p>
+              <p className="text-xs text-emerald-600">Hechas</p>
             </div>
             <div className="p-3 bg-amber-50 rounded-lg">
               <p className="text-2xl font-bold text-amber-700">{projectTasks.filter(t => t.status === "blocked").length}</p>
@@ -167,100 +324,50 @@ export function ProjectDetailSheet({ project, tasks, onClose }: ProjectDetailShe
           </div>
         </Card>
 
-        {/* Lista de tareas */}
-        {projectTasks.length > 0 && (
+        {/* Links configurados */}
+        {(project.github_url || project.vercel_url || project.docs_url) && (
           <div>
-            <h4 className="text-sm font-medium text-stone-700 mb-3">Tareas del Proyecto</h4>
-            <div className="space-y-2">
-              {projectTasks.slice(0, 5).map(task => (
-                <div 
-                  key={task.id}
-                  className="flex items-center justify-between p-3 bg-white border border-stone-100 rounded-lg"
-                >
-                  <div className="flex items-center gap-3">
-                    {task.status === "done" ? (
-                      <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                    ) : task.status === "blocked" ? (
-                      <AlertCircle className="w-4 h-4 text-red-500" />
-                    ) : (
-                      <Target className="w-4 h-4 text-stone-400" />
-                    )}
-                    <span className={`text-sm ${task.status === "done" ? "text-stone-400 line-through" : "text-stone-700"}`}>
-                      {task.title}
-                    </span>
+            <h4 className="text-sm font-medium text-stone-700 mb-3">🔗 Links del Proyecto</h4>
+            <div className="grid grid-cols-1 gap-2">
+              {project.github_url && (
+                <a href={project.github_url} target="_blank" rel="noopener noreferrer" 
+                   className="flex items-center gap-3 p-3 bg-white border border-stone-200 rounded-lg hover:border-stone-300 transition">
+                  <Github className="w-5 h-5 text-stone-700" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-stone-700">GitHub</p>
+                    <p className="text-xs text-stone-400 truncate">{project.github_url}</p>
                   </div>
-                  <Badge value={task.status} />
-                </div>
-              ))}
-              {projectTasks.length > 5 && (
-                <p className="text-xs text-stone-400 text-center py-2">
-                  +{projectTasks.length - 5} tareas más...
-                </p>
+                  <ExternalLink className="w-4 h-4 text-stone-300" />
+                </a>
+              )}
+              {project.vercel_url && (
+                <a href={project.vercel_url} target="_blank" rel="noopener noreferrer"
+                   className="flex items-center gap-3 p-3 bg-white border border-stone-200 rounded-lg hover:border-stone-300 transition">
+                  <ExternalLink className="w-5 h-5 text-black" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-stone-700">Vercel</p>
+                    <p className="text-xs text-stone-400 truncate">{project.vercel_url}</p>
+                  </div>
+                  <ExternalLink className="w-4 h-4 text-stone-300" />
+                </a>
+              )}
+              {project.docs_url && (
+                <a href={project.docs_url} target="_blank" rel="noopener noreferrer"
+                   className="flex items-center gap-3 p-3 bg-white border border-stone-200 rounded-lg hover:border-stone-300 transition">
+                  <FileText className="w-5 h-5 text-blue-600" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-stone-700">Documentación</p>
+                    <p className="text-xs text-stone-400 truncate">{project.docs_url}</p>
+                  </div>
+                  <ExternalLink className="w-4 h-4 text-stone-300" />
+                </a>
               )}
             </div>
           </div>
         )}
 
-        {/* Metadata */}
-        <div className="space-y-2 text-sm pt-4 border-t border-stone-100">
-          <div className="flex justify-between py-2 border-b border-stone-100">
-            <span className="text-stone-500 flex items-center gap-2">
-              <Clock className="w-4 h-4" />
-              Creado
-            </span>
-            <span className="text-stone-700">{formatDate(project.created_at)}</span>
-          </div>
-          <div className="flex justify-between py-2 border-b border-stone-100">
-            <span className="text-stone-500">Última actualización</span>
-            <span className="text-stone-700">{formatDate(project.updated_at)}</span>
-          </div>
-        </div>
-
-        {/* Links directos a recursos */}
-        <div className="pt-4 border-t border-stone-100">
-          <h4 className="text-sm font-medium text-stone-700 mb-3">Recursos Rápidos</h4>
-          <div className="grid grid-cols-2 gap-2">
-            <a
-              href="https://github.com/matute1111"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 p-2 text-sm text-stone-600 hover:bg-stone-50 rounded-lg transition"
-            >
-              <Github className="w-4 h-4" />
-              <span>GitHub</span>
-            </a>
-            <a
-              href="https://supabase.com/dashboard"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 p-2 text-sm text-stone-600 hover:bg-stone-50 rounded-lg transition"
-            >
-              <ExternalLink className="w-4 h-4" />
-              <span>Supabase</span>
-            </a>
-            <a
-              href="https://vercel.com/dashboard"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 p-2 text-sm text-stone-600 hover:bg-stone-50 rounded-lg transition"
-            >
-              <ExternalLink className="w-4 h-4" />
-              <span>Vercel</span>
-            </a>
-            <a
-              href="https://my.blotato.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 p-2 text-sm text-stone-600 hover:bg-stone-50 rounded-lg transition"
-            >
-              <ExternalLink className="w-4 h-4" />
-              <span>Blotato</span>
-            </a>
-          </div>
-        </div>
-
         {/* Acciones */}
-        <div className="flex gap-3 pt-4">
+        <div className="flex gap-3 pt-4 border-t border-stone-100">
           <Button variant="outline" onClick={onClose} className="flex-1">
             Cerrar
           </Button>
