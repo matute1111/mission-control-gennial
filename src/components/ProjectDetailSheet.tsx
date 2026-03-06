@@ -431,6 +431,90 @@ export function ProjectDetailSheet({ project, tasks, projects = [], onClose, onU
           </div>
         )}
 
+        {/* Recursos y Herramientas */}
+        <div className="pt-4 border-t border-stone-100">
+          <h4 className="text-sm font-medium text-stone-700 mb-3">🛠️ Recursos y Herramientas</h4>
+          <div className="grid grid-cols-2 gap-2">
+            <a
+              href="https://github.com/matute1111"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 p-2 text-sm text-stone-600 hover:bg-stone-50 rounded-lg transition"
+            >
+              <Github className="w-4 h-4" />
+              <span>GitHub</span>
+            </a>
+            <a
+              href="https://supabase.com/dashboard"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 p-2 text-sm text-stone-600 hover:bg-stone-50 rounded-lg transition"
+            >
+              <ExternalLink className="w-4 h-4" />
+              <span>Supabase</span>
+            </a>
+            <a
+              href="https://vercel.com/dashboard"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 p-2 text-sm text-stone-600 hover:bg-stone-50 rounded-lg transition"
+            >
+              <ExternalLink className="w-4 h-4" />
+              <span>Vercel</span>
+            </a>
+            <a
+              href="https://my.blotato.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 p-2 text-sm text-stone-600 hover:bg-stone-50 rounded-lg transition"
+            >
+              <ExternalLink className="w-4 h-4" />
+              <span>Blotato</span>
+            </a>
+          </div>
+        </div>
+
+        {/* API Keys */}
+        <div className="pt-4 border-t border-stone-100">
+          <h4 className="text-sm font-medium text-stone-700 mb-3 flex items-center gap-2">
+            <LinkIcon className="w-4 h-4" />
+            API Keys Guardadas
+          </h4>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between p-2 bg-amber-50 rounded-lg border border-amber-100">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-amber-800">Supabase</span>
+                <span className="text-xs text-amber-600">(oculto)</span>
+              </div>
+              <a 
+                href="https://supabase.com/dashboard/project/_/settings/api"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-amber-700 hover:underline"
+              >
+                Ver en Dashboard →
+              </a>
+            </div>
+            <div className="flex items-center justify-between p-2 bg-blue-50 rounded-lg border border-blue-100">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-blue-800">Blotato</span>
+                <span className="text-xs text-blue-600">(oculto)</span>
+              </div>
+              <a 
+                href="https://my.blotato.com/settings"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-blue-700 hover:underline"
+              >
+                Ver en Dashboard →
+              </a>
+            </div>
+          </div>
+          <p className="text-xs text-stone-400 mt-2">
+            Las API keys se gestionan en los dashboards correspondientes por seguridad.
+          </p>
+        </div>
+
         {/* Acciones */}
         <div className="flex gap-3 pt-4 border-t border-stone-100">
           <Button variant="outline" onClick={onClose} className="flex-1">
