@@ -80,6 +80,7 @@ export function ProjectDetailSheet({ project, tasks, onClose, onUpdate }: Projec
     })
     setNewUpdate("")
     fetchUpdates()
+    onUpdate?.() // Refresca la lista de proyectos para mostrar el último update
   }
 
   if (!project) return null
