@@ -23,7 +23,8 @@ import {
   Terminal,
   Bug,
   Lightbulb,
-  Layers
+  Layers,
+  BookOpen
 } from "lucide-react"
 
 interface TaskDetailSheetProps {
@@ -248,6 +249,99 @@ export function TaskDetailSheet({ task, project, onClose }: TaskDetailSheetProps
               <div>
                 <h4 className="text-sm font-semibold text-emerald-900 mb-2">✅ Resultado</h4>
                 <p className="text-sm text-emerald-800 whitespace-pre-wrap">{task.result}</p>
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {/* DEPLOYMENT STATUS */}
+        {task.deployment_status && (
+          <Card className={`
+            ${task.deployment_status === 'deployed' ? 'bg-emerald-50 border-emerald-200' :
+              task.deployment_status === 'partial' ? 'bg-amber-50 border-amber-200' :
+              task.deployment_status === 'failed' ? 'bg-red-50 border-red-200' :
+              task.deployment_status === 'pending' ? 'bg-blue-50 border-blue-200' :
+              'bg-stone-50 border-stone-200'}
+          `}>
+            <div className="flex items-center gap-2 mb-2">
+              <Globe className={`w-5 h-5 ${
+                task.deployment_status === 'deployed' ? 'text-emerald-600' :
+                task.deployment_status === 'partial' ? 'text-amber-600' :
+                task.deployment_status === 'failed' ? 'text-red-600' :
+                task.deployment_status === 'pending' ? 'text-blue-600' :
+                'text-stone-600'
+              }`} />
+              <h4 className="text-sm font-semibold text-stone-900">🚀 Estado del Deployment</h4>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                task.deployment_status === 'deployed' ? 'bg-emerald-100 text-emerald-800' :
+                task.deployment_status === 'partial' ? 'bg-amber-100 text-amber-800' :
+                task.deployment_status === 'failed' ? 'bg-red-100 text-red-800' :
+                task.deployment_status === 'pending' ? 'bg-blue-100 text-blue-800' :
+                'bg-stone-100 text-stone-600'
+              }`}>
+                {task.deployment_status === 'deployed' ? '✅ Deployado' :
+                 task.deployment_status === 'partial' ? '⚠️ Parcial' :
+                 task.deployment_status === 'failed' ? '❌ Falló' :
+                 task.deployment_status === 'pending' ? '⏳ Pendiente' :
+                 '➖ No requerido'}
+              </span>
+              {task.deployment_url && (
+                <a href={task.deployment_url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline">
+                  Ver deploy →
+                </a>
+              )}
+            </div>
+          </Card>
+        )}
+
+        {/* PASOS EJECUTADOS - Cronología */}
+        {task.steps_taken && task.steps_taken.length > 0 && (
+          <Card className="bg-gradient-to-br from-indigo-50 to-blue-50 border-indigo-100">
+            <div className="flex items-center gap-2 mb-3">
+              <Layers className="w-5 h-5 text-indigo-600" />
+              <h4 className="text-sm font-semibold text-indigo-900">📝 Pasos Ejecutados (Cronología)</h4>
+            </div>
+            <div className="space-y-2">
+              {task.steps_taken.map((step, i) => (
+                <div key={i} className="flex items-start gap-3">
+                  <span className="flex-shrink-0 w-6 h-6 flex items-center justify-center bg-indigo-100 text-indigo-700 text-xs font-bold rounded-full">
+                    {i + 1}
+                  </span>
+                  <p className="text-sm text-indigo-800 pt-0.5">{step}</p>
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
+
+        {/* DECISIONES TOMADAS */}
+        {task.decisions_made && task.decisions_made.length > 0 && (
+          <Card className="bg-gradient-to-br from-cyan-50 to-teal-50 border-cyan-100">
+            <div className="flex items-center gap-2 mb-3">
+              <Lightbulb className="w-5 h-5 text-cyan-600" />
+              <h4 className="text-sm font-semibold text-cyan-900">💭 Decisiones Tomadas</h4>
+            </div>
+            <div className="space-y-2">
+              {task.decisions_made.map((decision, i) => (
+                <div key={i} className="flex items-start gap-2 p-2 bg-white/50 rounded-lg">
+                  <span className="text-cyan-500 font-bold">•</span>
+                  <p className="text-sm text-cyan-800">{decision}</p>
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
+
+        {/* APRENDIZAJES */}
+        {task.learnings && (
+          <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-amber-100">
+            <div className="flex items-start gap-3">
+              <BookOpen className="w-5 h-5 text-amber-600 mt-0.5" />
+              <div className="flex-1">
+                <h4 className="text-sm font-semibold text-amber-900 mb-2">📚 Aprendizajes</h4>
+                <p className="text-sm text-amber-800 whitespace-pre-wrap">{task.learnings}</p>
               </div>
             </div>
           </Card>

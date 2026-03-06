@@ -53,6 +53,10 @@ export interface Task {
   files_modified?: string[]      // Archivos modificados
   deployment_url?: string        // URL del deploy si aplica
   pr_url?: string                // URL del PR si aplica
+  deployment_status?: 'deployed' | 'partial' | 'failed' | 'pending' | 'not_required'  // Estado del deploy
+  learnings?: string             // Aprendizajes del task
+  steps_taken?: string[]         // Pasos ejecutados (cronología)
+  decisions_made?: string[]      // Decisiones tomadas durante ejecución
 }
 
 export interface Proposal {

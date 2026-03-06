@@ -66,6 +66,26 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'tasks' AND column_name = 'pr_url') THEN
         ALTER TABLE tasks ADD COLUMN pr_url TEXT;
     END IF;
+
+    -- Estado del deployment
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'tasks' AND column_name = 'deployment_status') THEN
+        ALTER TABLE tasks ADD COLUMN deployment_status VARCHAR(20) CHECK (deployment_status IN ('deployed', 'partial', 'failed', 'pending', 'not_required'));
+    END IF;
+
+    -- Aprendizajes
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'tasks' AND column_name = 'learnings') THEN
+        ALTER TABLE tasks ADD COLUMN learnings TEXT;
+    END IF;
+
+    -- Pasos ejecutados (cronología)
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'tasks' AND column_name = 'steps_taken') THEN
+        ALTER TABLE tasks ADD COLUMN steps_taken TEXT[] DEFAULT '{}';
+    END IF;
+
+    -- Decisiones tomadas
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'tasks' AND column_name = 'decisions_made') THEN
+        ALTER TABLE tasks ADD COLUMN decisions_made TEXT[] DEFAULT '{}';
+    END IF;
 END $$;
 
 -- Comentarios para documentación
@@ -82,3 +102,7 @@ COMMENT ON COLUMN tasks.tools_used IS 'Array de herramientas usadas (git, vercel
 COMMENT ON COLUMN tasks.files_modified IS 'Array de archivos modificados';
 COMMENT ON COLUMN tasks.deployment_url IS 'URL del deployment si aplica';
 COMMENT ON COLUMN tasks.pr_url IS 'URL del Pull Request si aplica';
+COMMENT ON COLUMN tasks.deployment_status IS 'Estado del deploy: deployed, partial, failed, pending, not_required';
+COMMENT ON COLUMN tasks.learnings IS 'Aprendizajes obtenidos durante la ejecución del task';
+COMMENT ON COLUMN tasks.steps_taken IS 'Array de pasos ejecutados (cronología de acciones)';
+COMMENT ON COLUMN tasks.decisions_made IS 'Array de decisiones tomadas durante ejecución';
