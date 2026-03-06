@@ -4,7 +4,7 @@
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'projects' AND column_name = 'project_type') THEN
-        ALTER TABLE projects ADD COLUMN project_type VARCHAR(10) DEFAULT 'micro' CHECK (project_type IN ('macro', 'micro'));
+        ALTER TABLE projects ADD COLUMN project_type VARCHAR(10) DEFAULT 'feature' CHECK (project_type IN ('macro', 'feature'));
     END IF;
 END $$;
 
@@ -23,10 +23,10 @@ CREATE INDEX IF NOT EXISTS idx_projects_parent_id ON projects(parent_project_id)
 CREATE INDEX IF NOT EXISTS idx_projects_type ON projects(project_type);
 
 -- Comentarios para documentación
-COMMENT ON COLUMN projects.project_type IS 'Tipo de proyecto: macro (contiene sub-proyectos) o micro (tiene tareas)';
-COMMENT ON COLUMN projects.parent_project_id IS 'ID del proyecto padre (macro) al que pertenece este sub-proyecto';
+COMMENT ON COLUMN projects.project_type IS 'Tipo de proyecto: macro (contiene features) o feature (tiene tareas)';
+COMMENT ON COLUMN projects.parent_project_id IS 'ID del proyecto padre (macro) al que pertenece este feature';
 
 -- Actualizar proyectos existentes que no tengan parent para que sean tipo 'macro' por defecto
 -- (asumiendo que si no tienen padre son proyectos principales)
 UPDATE projects SET project_type = 'macro' WHERE parent_project_id IS NULL AND project_type IS NULL;
-UPDATE projects SET project_type = 'micro' WHERE parent_project_id IS NOT NULL AND project_type IS NULL;
+UPDATE projects SET project_type = 'feature' WHERE parent_project_id IS NOT NULL AND project_type IS NULL;

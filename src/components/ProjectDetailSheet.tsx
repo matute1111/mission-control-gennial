@@ -163,10 +163,10 @@ export function ProjectDetailSheet({ project, tasks, projects = [], onClose, onU
               <h4 className="text-sm font-semibold text-violet-900">🗂️ Jerarquía</h4>
             </div>
             
-            {/* Si es micro, mostrar macro padre */}
+            {/* Si es feature, mostrar macro padre */}
             {parentProject && (
               <div className="mb-3">
-                <p className="text-xs text-violet-600 mb-1">Parte del macro proyecto:</p>
+                <p className="text-xs text-violet-600 mb-1">Feature de:</p>
                 <div className="flex items-center gap-2 p-2 bg-white rounded-lg border border-violet-200">
                   <FolderOpen className="w-4 h-4 text-blue-500" />
                   <span className="text-sm font-medium text-stone-800">{parentProject.name}</span>
@@ -175,10 +175,10 @@ export function ProjectDetailSheet({ project, tasks, projects = [], onClose, onU
               </div>
             )}
             
-            {/* Si es macro, mostrar sub-proyectos */}
+            {/* Si es macro, mostrar features */}
             {childProjects.length > 0 && (
               <div>
-                <p className="text-xs text-violet-600 mb-1">Sub-proyectos ({childProjects.length}):</p>
+                <p className="text-xs text-violet-600 mb-1">Features ({childProjects.length}):</p>
                 <div className="space-y-2">
                   {childProjects.map(child => {
                     const childTaskCount = tasks.filter(t => t.project_id === child.id).length

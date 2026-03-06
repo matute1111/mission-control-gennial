@@ -23,7 +23,7 @@ export interface Project {
   vercel_url?: string      // URL del deploy
   docs_url?: string        // URL de documentación
   parent_project_id?: string | null  // ID del proyecto padre (macro proyecto)
-  project_type?: 'macro' | 'micro'   // Tipo: macro (contiene micros) o micro (tiene tasks)
+  project_type?: 'macro' | 'feature' // Tipo: macro (contiene features) o feature (tiene tasks)
 }
 
 export interface Task {

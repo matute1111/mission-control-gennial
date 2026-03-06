@@ -20,7 +20,7 @@ export function Projects({ projects, tasks, refresh }: Props) {
   const [name, setName] = useState("")
   const [desc, setDesc] = useState("")
   const [prio, setPrio] = useState("medium")
-  const [projectType, setProjectType] = useState<'macro' | 'micro'>('micro')
+  const [projectType, setProjectType] = useState<'macro' | 'feature'>('feature')
   const [parentProjectId, setParentProjectId] = useState("")
   const [selectedProject, setSelectedProject] = useState<Project | null>(null)
   const [latestUpdates, setLatestUpdates] = useState<Record<string, ProjectUpdate>>({})
@@ -52,9 +52,9 @@ export function Projects({ projects, tasks, refresh }: Props) {
     fetchLatestUpdates()
   }, [projects])
 
-  // Separar proyectos macro y micro
+  // Separar proyectos macro y features
   const macroProjects = projects.filter(p => p.project_type === 'macro' || !p.parent_project_id)
-  const microProjects = projects.filter(p => p.parent_project_id)
+  const featureProjects = projects.filter(p => p.parent_project_id || p.project_type === 'feature')
   
   // Filtrar según status
   const filteredMacros = filter === "all" ? macroProjects : macroProjects.filter(p => p.status === filter)
@@ -71,7 +71,7 @@ export function Projects({ projects, tasks, refresh }: Props) {
       project_type: projectType,
       parent_project_id: parentProjectId || null
     })
-    setName(""); setDesc(""); setPrio("medium"); setProjectType('micro'); setParentProjectId(""); setShow(false); refresh()
+    setName(""); setDesc(""); setPrio("medium"); setProjectType('feature'); setParentProjectId(""); setShow(false); refresh()
   }
 
   const complete = async (id: string) => {
@@ -153,7 +153,7 @@ export function Projects({ projects, tasks, refresh }: Props) {
         {filteredMacros.length === 0 && <div className="px-5 py-8 text-center text-stone-400 text-sm">Sin proyectos</div>}
         
         {filteredMacros.map(macro => {
-          const macroMicros = microProjects.filter(m => m.parent_project_id === macro.id)
+          const macroFeatures = featureProjects.filter(m => m.parent_project_id === macro.id)
           const isExpanded = expandedMacros.has(macro.id)
           const macroTasks = tasks.filter(t => t.project_id === macro.id)
           const macroProgress = macroTasks.length > 0 
@@ -181,8 +181,8 @@ export function Projects({ projects, tasks, refresh }: Props) {
                         <div className="font-semibold text-stone-900">{macro.name}</div>
                         <div className="flex items-center gap-2 text-xs text-stone-500">
                           <span>Macro Proyecto</span>
-                          {macroMicros.length > 0 && (
-                            <span>• {macroMicros.length} sub-proyectos</span>
+                          {macroFeatures.length > 0 && (
+                            <span>• {macroFeatures.length} features</span>
                           )}
                           {macroTasks.length > 0 && (
                             <span>• {macroProgress}% tasks</span>
@@ -203,10 +203,10 @@ export function Projects({ projects, tasks, refresh }: Props) {
                 {renderProjectStatus(macro)}
               </div>
               
-              {/* MICRO PROYECTOS (hijos) */}
-              {isExpanded && macroMicros.length > 0 && (
+              {/* FEATURES (hijos del macro) */}
+              {isExpanded && macroFeatures.length > 0 && (
                 <div className="bg-white">
-                  {macroMicros.map(micro => {
+                  {macroFeatures.map(micro => {
                     const microTasks = tasks.filter(t => t.project_id === micro.id)
                     const microProgress = microTasks.length > 0
                       ? Math.round((microTasks.filter(t => t.status === "done").length / microTasks.length) * 100)
@@ -224,7 +224,7 @@ export function Projects({ projects, tasks, refresh }: Props) {
                             <div>
                               <div className="font-medium text-stone-800">{micro.name}</div>
                               <div className="flex items-center gap-2 text-xs text-stone-400">
-                                <span>Sub-proyecto</span>
+                                <span>Feature</span>
                                 {microTasks.length > 0 && (
                                   <span>• {microTasks.length} tareas ({microProgress}%)</span>
                                 )}
@@ -247,17 +247,17 @@ export function Projects({ projects, tasks, refresh }: Props) {
                 </div>
               )}
               
-              {isExpanded && macroMicros.length === 0 && (
+              {isExpanded && macroFeatures.length === 0 && (
                 <div className="px-5 py-3 pl-16 text-xs text-stone-400 italic">
-                  Sin sub-proyectos
+                  Sin features
                 </div>
               )}
             </div>
           )
         })}
         
-        {/* Micro proyectos sin macro padre (huérfanos) */}
-        {microProjects.filter(m => !m.parent_project_id).map(micro => (
+        {/* Features sin macro padre (huérfanos) */}
+        {featureProjects.filter(m => !m.parent_project_id).map(micro => (
           <div 
             key={micro.id}
             className="px-5 py-4 hover:bg-stone-50 transition cursor-pointer"
@@ -299,13 +299,13 @@ export function Projects({ projects, tasks, refresh }: Props) {
               <option value="low">Low</option>
             </Select>
             
-            <Select value={projectType} onChange={e => setProjectType(e.target.value as 'macro' | 'micro')}>
-              <option value="micro">Sub-proyecto</option>
+            <Select value={projectType} onChange={e => setProjectType(e.target.value as 'macro' | 'feature')}>
+              <option value="feature">Feature</option>
               <option value="macro">Macro Proyecto</option>
             </Select>
           </div>
           
-          {projectType === 'micro' && (
+          {projectType === 'feature' && (
             <Select value={parentProjectId} onChange={e => setParentProjectId(e.target.value)}>
               <option value="">Sin macro proyecto</option>
               {macroProjects.map(p => (
