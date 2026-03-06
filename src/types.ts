@@ -39,6 +39,20 @@ export interface Task {
   created_by: string
   created_at: string
   updated_at: string
+  // Campos de ejecución detallada
+  assigned_agent?: string        // Quién lo hizo: 'kimi', 'subagent-xyz', etc.
+  agent_profile?: string         // Perfil: 'frontend', 'backend', 'research', 'devops', etc.
+  model_used?: string            // Modelo: 'kimi-k2.5', 'claude-sonnet-4.5', etc.
+  execution_log?: string         // Log detallado de pasos ejecutados
+  subagent_id?: string           // ID del subagente si aplica
+  technical_details?: string     // Detalles técnicos de la implementación
+  blockers_encountered?: string  // Bloqueantes encontrados durante ejecución
+  solution_applied?: string      // Solución aplicada a los bloqueantes
+  time_spent_minutes?: number    // Tiempo gastado en minutos
+  tools_used?: string[]          // Herramientas usadas: ['git', 'vercel', 'supabase', etc.]
+  files_modified?: string[]      // Archivos modificados
+  deployment_url?: string        // URL del deploy si aplica
+  pr_url?: string                // URL del PR si aplica
 }
 
 export interface Proposal {

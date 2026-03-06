@@ -12,7 +12,18 @@ import {
   AlertCircle,
   CheckCircle2,
   Link as LinkIcon,
-  Key
+  Key,
+  Cpu,
+  Wrench,
+  Clock3,
+  FileCode,
+  GitBranch,
+  Globe,
+  Bot,
+  Terminal,
+  Bug,
+  Lightbulb,
+  Layers
 } from "lucide-react"
 
 interface TaskDetailSheetProps {
@@ -56,8 +67,17 @@ export function TaskDetailSheet({ task, project, onClose }: TaskDetailSheetProps
     })
   }
 
+  // Formatear tiempo
+  const formatTime = (minutes?: number) => {
+    if (!minutes) return "N/A"
+    if (minutes < 60) return `${minutes} min`
+    const hours = Math.floor(minutes / 60)
+    const mins = minutes % 60
+    return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`
+  }
+
   return (
-    <Sheet open={!!task} onClose={onClose} title="Detalle de Tarea">
+    <Sheet open={!!task} onClose={onClose} title="📋 Detalle de Tarea">
       <div className="space-y-6">
         {/* Header con estado */}
         <div className="flex items-start justify-between">
@@ -65,21 +85,169 @@ export function TaskDetailSheet({ task, project, onClose }: TaskDetailSheetProps
             <h3 className="text-xl font-bold text-stone-900">{task.title}</h3>
             {project && (
               <p className="text-sm text-stone-500 mt-1">
-                Proyecto: <span className="font-medium text-stone-700">{project.name}</span>
+                Feature: <span className="font-medium text-stone-700">{project.name}</span>
               </p>
             )}
           </div>
           <Badge value={task.status} />
         </div>
 
-        {/* Descripción */}
+        {/* INFO DE EJECUCIÓN - Quién lo hizo */}
+        <Card className="bg-gradient-to-br from-violet-50 to-purple-50 border-violet-100">
+          <div className="flex items-center gap-2 mb-3">
+            <Bot className="w-5 h-5 text-violet-600" />
+            <h4 className="text-sm font-semibold text-violet-900">🤖 Agente de Ejecución</h4>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-3">
+            {/* Quién lo hizo */}
+            <div className="p-2 bg-white rounded-lg border border-violet-200">
+              <p className="text-xs text-violet-600 mb-1">Encargado</p>
+              <p className="text-sm font-medium text-stone-800">
+                {task.assigned_agent || task.assigned_to || "Sin asignar"}
+              </p>
+              {task.subagent_id && (
+                <p className="text-xs text-stone-400">ID: {task.subagent_id}</p>
+              )}
+            </div>
+            
+            {/* Perfil */}
+            <div className="p-2 bg-white rounded-lg border border-violet-200">
+              <p className="text-xs text-violet-600 mb-1">Perfil</p>
+              <p className="text-sm font-medium text-stone-800">
+                {task.agent_profile || "General"}
+              </p>
+            </div>
+            
+            {/* Modelo usado */}
+            <div className="p-2 bg-white rounded-lg border border-violet-200">
+              <p className="text-xs text-violet-600 mb-1">Modelo AI</p>
+              <p className="text-sm font-medium text-stone-800">
+                {task.model_used || "No especificado"}
+              </p>
+            </div>
+            
+            {/* Tiempo */}
+            <div className="p-2 bg-white rounded-lg border border-violet-200">
+              <p className="text-xs text-violet-600 mb-1">Tiempo</p>
+              <p className="text-sm font-medium text-stone-800">
+                {formatTime(task.time_spent_minutes)}
+              </p>
+            </div>
+          </div>
+        </Card>
+
+        {/* Herramientas usadas */}
+        {task.tools_used && task.tools_used.length > 0 && (
+          <div>
+            <h4 className="text-sm font-medium text-stone-700 mb-2 flex items-center gap-2">
+              <Wrench className="w-4 h-4" />
+              🛠️ Herramientas Usadas
+            </h4>
+            <div className="flex flex-wrap gap-2">
+              {task.tools_used.map((tool, i) => (
+                <span key={i} className="px-2 py-1 bg-stone-100 text-stone-700 text-xs rounded-full">
+                  {tool}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Archivos modificados */}
+        {task.files_modified && task.files_modified.length > 0 && (
+          <div>
+            <h4 className="text-sm font-medium text-stone-700 mb-2 flex items-center gap-2">
+              <FileCode className="w-4 h-4" />
+              📁 Archivos Modificados
+            </h4>
+            <div className="space-y-1 max-h-32 overflow-y-auto bg-stone-50 rounded-lg p-2">
+              {task.files_modified.map((file, i) => (
+                <div key={i} className="text-xs text-stone-600 font-mono flex items-center gap-2">
+                  <GitBranch className="w-3 h-3 text-stone-400" />
+                  {file}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Descripción original */}
         {task.description && (
           <Card className="bg-stone-50">
             <div className="flex items-start gap-3">
               <FileText className="w-5 h-5 text-stone-400 mt-0.5" />
               <div>
-                <h4 className="text-sm font-medium text-stone-700 mb-2">Descripción</h4>
+                <h4 className="text-sm font-medium text-stone-700 mb-2">📝 Descripción Original</h4>
                 <p className="text-sm text-stone-600 whitespace-pre-wrap">{task.description}</p>
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {/* EXECUTION LOG - Qué se hizo */}
+        {task.execution_log && (
+          <Card className="bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-100">
+            <div className="flex items-start gap-3">
+              <Terminal className="w-5 h-5 text-emerald-600 mt-0.5" />
+              <div className="flex-1">
+                <h4 className="text-sm font-semibold text-emerald-900 mb-2">⚡ Log de Ejecución</h4>
+                <div className="text-sm text-emerald-800 whitespace-pre-wrap font-mono text-xs bg-white/50 p-3 rounded-lg">
+                  {task.execution_log}
+                </div>
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {/* Detalles técnicos */}
+        {task.technical_details && (
+          <Card className="bg-blue-50 border-blue-100">
+            <div className="flex items-start gap-3">
+              <Cpu className="w-5 h-5 text-blue-600 mt-0.5" />
+              <div>
+                <h4 className="text-sm font-semibold text-blue-900 mb-2">🔧 Detalles Técnicos</h4>
+                <p className="text-sm text-blue-800 whitespace-pre-wrap">{task.technical_details}</p>
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {/* Bloqueantes y soluciones */}
+        {(task.blockers_encountered || task.blocked_reason) && (
+          <Card className="bg-red-50 border-red-100">
+            <div className="flex items-start gap-3">
+              <Bug className="w-5 h-5 text-red-600 mt-0.5" />
+              <div>
+                <h4 className="text-sm font-semibold text-red-900 mb-2">🚧 Bloqueantes Encontrados</h4>
+                <p className="text-sm text-red-800 whitespace-pre-wrap">
+                  {task.blockers_encountered || task.blocked_reason}
+                </p>
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {task.solution_applied && (
+          <Card className="bg-amber-50 border-amber-100">
+            <div className="flex items-start gap-3">
+              <Lightbulb className="w-5 h-5 text-amber-600 mt-0.5" />
+              <div>
+                <h4 className="text-sm font-semibold text-amber-900 mb-2">💡 Solución Aplicada</h4>
+                <p className="text-sm text-amber-800 whitespace-pre-wrap">{task.solution_applied}</p>
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {/* Resultado */}
+        {task.result && (
+          <Card className="bg-emerald-50 border-emerald-100">
+            <div className="flex items-start gap-3">
+              <CheckCircle2 className="w-5 h-5 text-emerald-600 mt-0.5" />
+              <div>
+                <h4 className="text-sm font-semibold text-emerald-900 mb-2">✅ Resultado</h4>
+                <p className="text-sm text-emerald-800 whitespace-pre-wrap">{task.result}</p>
               </div>
             </div>
           </Card>
@@ -90,7 +258,7 @@ export function TaskDetailSheet({ task, project, onClose }: TaskDetailSheetProps
           <div>
             <h4 className="text-sm font-medium text-stone-700 mb-3 flex items-center gap-2">
               <LinkIcon className="w-4 h-4" />
-              Links del Proyecto
+              🔗 Links
             </h4>
             <div className="space-y-2">
               {allUrls.map((url, idx) => {
@@ -116,30 +284,46 @@ export function TaskDetailSheet({ task, project, onClose }: TaskDetailSheetProps
           </div>
         )}
 
-        {/* Resultado */}
-        {task.result && (
-          <Card className="bg-emerald-50 border-emerald-100">
-            <div className="flex items-start gap-3">
-              <CheckCircle2 className="w-5 h-5 text-emerald-600 mt-0.5" />
-              <div>
-                <h4 className="text-sm font-medium text-emerald-800 mb-2">Resultado</h4>
-                <p className="text-sm text-emerald-700 whitespace-pre-wrap">{task.result}</p>
-              </div>
+        {/* URLs específicas del task */}
+        {(task.deployment_url || task.pr_url) && (
+          <div>
+            <h4 className="text-sm font-medium text-stone-700 mb-3 flex items-center gap-2">
+              <Globe className="w-4 h-4" />
+              🚀 Deploys y PRs
+            </h4>
+            <div className="space-y-2">
+              {task.deployment_url && (
+                <a
+                  href={task.deployment_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 p-3 bg-emerald-50 border border-emerald-200 rounded-lg hover:border-emerald-300 transition"
+                >
+                  <Globe className="w-5 h-5 text-emerald-600" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-emerald-800">Deployment</p>
+                    <p className="text-xs text-emerald-600 truncate">{task.deployment_url}</p>
+                  </div>
+                  <ExternalLink className="w-4 h-4 text-emerald-400" />
+                </a>
+              )}
+              {task.pr_url && (
+                <a
+                  href={task.pr_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 p-3 bg-violet-50 border border-violet-200 rounded-lg hover:border-violet-300 transition"
+                >
+                  <GitBranch className="w-5 h-5 text-violet-600" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-violet-800">Pull Request</p>
+                    <p className="text-xs text-violet-600 truncate">{task.pr_url}</p>
+                  </div>
+                  <ExternalLink className="w-4 h-4 text-violet-400" />
+                </a>
+              )}
             </div>
-          </Card>
-        )}
-
-        {/* Info de bloqueo */}
-        {task.blocked_reason && (
-          <Card className="bg-red-50 border-red-100">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-red-600 mt-0.5" />
-              <div>
-                <h4 className="text-sm font-medium text-red-800 mb-2">Motivo de Bloqueo</h4>
-                <p className="text-sm text-red-700">{task.blocked_reason}</p>
-              </div>
-            </div>
-          </Card>
+          </div>
         )}
 
         {/* Metadata */}
@@ -147,7 +331,7 @@ export function TaskDetailSheet({ task, project, onClose }: TaskDetailSheetProps
           <Card>
             <div className="flex items-center gap-2 text-sm text-stone-500">
               <User className="w-4 h-4" />
-              <span>Asignado a</span>
+              <span>Asignado</span>
             </div>
             <p className="text-sm font-medium text-stone-900 mt-1">
               {task.assigned_to || "Sin asignar"}
@@ -177,99 +361,44 @@ export function TaskDetailSheet({ task, project, onClose }: TaskDetailSheetProps
           </div>
         </div>
 
-        {/* Links directos a recursos comunes */}
+        {/* Recursos */}
         <div className="pt-4 border-t border-stone-100">
-          <h4 className="text-sm font-medium text-stone-700 mb-3">Recursos del Proyecto</h4>
+          <h4 className="text-sm font-medium text-stone-700 mb-3">🛠️ Recursos del Proyecto</h4>
           <div className="grid grid-cols-2 gap-2">
-            <a
-              href="https://github.com/matute1111/animania-audio-vision"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 p-2 text-sm text-stone-600 hover:bg-stone-50 rounded-lg transition"
-            >
+            <a href="https://github.com/matute1111/animania-audio-vision" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-2 text-sm text-stone-600 hover:bg-stone-50 rounded-lg transition">
               <Github className="w-4 h-4" />
-              <span>GitHub Animania</span>
+              <span>GitHub</span>
             </a>
-            <a
-              href="https://github.com/matute1111/mission-control-gennial"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 p-2 text-sm text-stone-600 hover:bg-stone-50 rounded-lg transition"
-            >
-              <Github className="w-4 h-4" />
-              <span>GitHub Mission Control</span>
-            </a>
-            <a
-              href="https://supabase.com/dashboard"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 p-2 text-sm text-stone-600 hover:bg-stone-50 rounded-lg transition"
-            >
+            <a href="https://supabase.com/dashboard" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-2 text-sm text-stone-600 hover:bg-stone-50 rounded-lg transition">
               <Key className="w-4 h-4" />
-              <span>Supabase Dashboard</span>
+              <span>Supabase</span>
             </a>
-            <a
-              href="https://vercel.com/dashboard"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 p-2 text-sm text-stone-600 hover:bg-stone-50 rounded-lg transition"
-            >
+            <a href="https://vercel.com/dashboard" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-2 text-sm text-stone-600 hover:bg-stone-50 rounded-lg transition">
               <ExternalLink className="w-4 h-4" />
-              <span>Vercel Dashboard</span>
+              <span>Vercel</span>
             </a>
           </div>
         </div>
 
-        {/* API Keys (solo referencia, no los valores reales) */}
+        {/* API Keys */}
         <div className="pt-4 border-t border-stone-100">
           <h4 className="text-sm font-medium text-stone-700 mb-3 flex items-center gap-2">
             <Key className="w-4 h-4" />
-            API Keys Guardadas
+            API Keys
           </h4>
           <div className="space-y-2">
             <div className="flex items-center justify-between p-2 bg-amber-50 rounded-lg border border-amber-100">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-amber-800">Supabase</span>
-                <span className="text-xs text-amber-600">(oculto)</span>
-              </div>
-              <a 
-                href="https://supabase.com/dashboard/project/_/settings/api"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-amber-700 hover:underline"
-              >
-                Ver en Dashboard →
-              </a>
-            </div>
-            <div className="flex items-center justify-between p-2 bg-blue-50 rounded-lg border border-blue-100">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-blue-800">Blotato</span>
-                <span className="text-xs text-blue-600">(oculto)</span>
-              </div>
-              <a 
-                href="https://my.blotato.com/settings"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-blue-700 hover:underline"
-              >
-                Ver en Dashboard →
-              </a>
+              <span className="text-sm text-amber-800">Supabase</span>
+              <a href="https://supabase.com/dashboard/project/_/settings/api" target="_blank" rel="noopener noreferrer" className="text-xs text-amber-700 hover:underline">Ver →</a>
             </div>
           </div>
-          <p className="text-xs text-stone-400 mt-2">
-            Las API keys se gestionan en los dashboards correspondientes por seguridad.
-          </p>
         </div>
 
         {/* Acciones */}
         <div className="flex gap-3 pt-4">
-          <Button variant="outline" onClick={onClose} className="flex-1">
-            Cerrar
-          </Button>
+          <Button variant="outline" onClick={onClose} className="flex-1">Cerrar</Button>
           {task.status !== "done" && (
-            <Button className="flex-1 bg-emerald-600 hover:bg-emerald-700">
-              Marcar Completado
-            </Button>
+            <Button className="flex-1 bg-emerald-600 hover:bg-emerald-700">Marcar Completado</Button>
           )}
         </div>
       </div>
