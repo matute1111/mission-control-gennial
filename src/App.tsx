@@ -63,7 +63,7 @@ export default function App() {
       <Sidebar page={page} setPage={setPage} user={user} counts={counts} onLogout={logout} />
       <main className="flex-1 p-8 overflow-auto max-h-screen">
         {page === "dashboard" && <Dashboard projects={projects} tasks={tasks} proposals={proposals} activities={activities} />}
-        {page === "projects" && <Projects projects={projects} refresh={fetchAll} />}
+        {page === "projects" && <Projects projects={projects} tasks={tasks} refresh={fetchAll} />}
         {page === "tasks" && <Tasks tasks={tasks} projects={projects} refresh={fetchAll} />}
         {page === "proposals" && <Proposals proposals={proposals} refresh={fetchAll} />}
         {page === "activity" && <ActivityLog activities={activities} />}

@@ -7,18 +7,20 @@ import { Dialog, DialogTitle } from "@/components/Dialog"
 import { Input } from "@/components/Input"
 import { Textarea } from "@/components/Textarea"
 import { Select } from "@/components/Select"
+import { ProjectDetailSheet } from "@/components/ProjectDetailSheet"
 import { cn, ago } from "@/lib/utils"
-import type { Project } from "@/types"
+import type { Project, Task } from "@/types"
 import { Plus } from "lucide-react"
 
-interface Props { projects: Project[]; refresh: () => void }
+interface Props { projects: Project[]; tasks: Task[]; refresh: () => void }
 
-export function Projects({ projects, refresh }: Props) {
+export function Projects({ projects, tasks, refresh }: Props) {
   const [filter, setFilter] = useState("all")
   const [show, setShow] = useState(false)
   const [name, setName] = useState("")
   const [desc, setDesc] = useState("")
   const [prio, setPrio] = useState("medium")
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null)
 
   const filtered = filter === "all" ? projects : projects.filter(p => p.status === filter)
   const tabs = ["all", "active", "paused", "done", "cancelled"]
@@ -50,12 +52,16 @@ export function Projects({ projects, refresh }: Props) {
 
       <Card className="divide-y divide-stone-50">
         {filtered.map(p => (
-          <div key={p.id} className="px-5 py-3 flex items-center justify-between hover:bg-stone-50 transition">
+          <div 
+            key={p.id} 
+            className="px-5 py-3 flex items-center justify-between hover:bg-stone-50 transition cursor-pointer"
+            onClick={() => setSelectedProject(p)}
+          >
             <div>
               <div className="font-medium text-stone-900">{p.name}</div>
               {p.description && <div className="text-xs text-stone-500 truncate max-w-md mt-0.5">{p.description}</div>}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
               <Badge value={p.status} />
               <Badge value={p.priority} />
               <span className="text-[10px] text-stone-400 font-mono">{ago(p.created_at)}</span>
@@ -85,6 +91,12 @@ export function Projects({ projects, refresh }: Props) {
           </div>
         </div>
       </Dialog>
+
+      <ProjectDetailSheet 
+        project={selectedProject}
+        tasks={tasks}
+        onClose={() => setSelectedProject(null)}
+      />
     </div>
   )
 }

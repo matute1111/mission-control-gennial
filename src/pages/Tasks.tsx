@@ -7,6 +7,7 @@ import { Dialog, DialogTitle } from "@/components/Dialog"
 import { Input } from "@/components/Input"
 import { Textarea } from "@/components/Textarea"
 import { Select } from "@/components/Select"
+import { TaskDetailSheet } from "@/components/TaskDetailSheet"
 import { cn, ago } from "@/lib/utils"
 import type { Task, Project } from "@/types"
 import { Plus } from "lucide-react"
@@ -21,6 +22,7 @@ export function Tasks({ tasks, projects, refresh }: Props) {
   const [projId, setProjId] = useState("")
   const [prio, setPrio] = useState("medium")
   const [assignee, setAssignee] = useState("kimi")
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null)
 
   const filtered = filter === "all" ? tasks : tasks.filter(t => t.status === filter)
   const tabs = ["all", "pending", "in_progress", "blocked", "review", "done"]
@@ -72,7 +74,11 @@ export function Tasks({ tasks, projects, refresh }: Props) {
           </thead>
           <tbody className="divide-y divide-stone-50">
             {filtered.map(t => (
-              <tr key={t.id} className="hover:bg-stone-50 transition">
+              <tr 
+                key={t.id} 
+                className="hover:bg-stone-50 transition cursor-pointer"
+                onClick={() => setSelectedTask(t)}
+              >
                 <td className="px-5 py-3">
                   <div className="font-medium text-stone-900">{t.title}</div>
                   {t.description && <div className="text-xs text-stone-500 mt-0.5 truncate max-w-xs">{t.description}</div>}
@@ -82,7 +88,7 @@ export function Tasks({ tasks, projects, refresh }: Props) {
                 <td className="px-3 py-3"><Badge value={t.status} /></td>
                 <td className="px-3 py-3"><Badge value={t.priority} /></td>
                 <td className="px-3 py-3"><Badge value={t.assigned_to || "pending"} /></td>
-                <td className="px-3 py-3 text-right space-x-1">
+                <td className="px-3 py-3 text-right space-x-1" onClick={e => e.stopPropagation()}>
                   {t.status === "pending" && <Button variant="ghost" size="sm" className="text-blue-600" onClick={() => claim(t.id)}>Tomar</Button>}
                   {["pending", "in_progress", "review"].includes(t.status) && <Button variant="ghost" size="sm" className="text-emerald-600" onClick={() => complete(t.id)}>Completar</Button>}
                 </td>
@@ -121,6 +127,12 @@ export function Tasks({ tasks, projects, refresh }: Props) {
           </div>
         </div>
       </Dialog>
+
+      <TaskDetailSheet 
+        task={selectedTask} 
+        project={selectedTask ? projects.find(p => p.id === selectedTask.project_id) || null : null}
+        onClose={() => setSelectedTask(null)} 
+      />
     </div>
   )
 }
