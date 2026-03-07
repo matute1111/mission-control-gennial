@@ -1,5 +1,6 @@
 import { Sheet } from "./Sheet"
 import { Badge } from "./Badge"
+import { AssigneeBadge } from "./AssigneeBadge"
 import { Button } from "./Button"
 import { Card } from "./Card"
 import type { Task, Project } from "@/types"
@@ -104,11 +105,11 @@ export function TaskDetailSheet({ task, project, onClose }: TaskDetailSheetProps
             {/* Quién lo hizo */}
             <div className="p-2 bg-white rounded-lg border border-violet-200">
               <p className="text-xs text-violet-600 mb-1">Encargado</p>
-              <p className="text-sm font-medium text-stone-800">
-                {task.assigned_agent || task.assigned_to || "Sin asignar"}
-              </p>
+              <div className="mt-1">
+                <AssigneeBadge assignedTo={task.assigned_to} assignedAgent={task.assigned_agent} size="md" />
+              </div>
               {task.subagent_id && (
-                <p className="text-xs text-stone-400">ID: {task.subagent_id}</p>
+                <p className="text-xs text-stone-400 mt-1">ID: {task.subagent_id}</p>
               )}
             </div>
             

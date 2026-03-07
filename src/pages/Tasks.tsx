@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { supabase } from "@/lib/supabase"
 import { Badge } from "@/components/Badge"
+import { AssigneeBadge } from "@/components/AssigneeBadge"
 import { Button } from "@/components/Button"
 import { Card } from "@/components/Card"
 import { Dialog, DialogTitle } from "@/components/Dialog"
@@ -88,7 +89,7 @@ export function Tasks({ tasks, projects, refresh }: Props) {
                 <td className="px-3 py-3 text-stone-500 text-xs">{projName(t.project_id)}</td>
                 <td className="px-3 py-3"><Badge value={t.status} /></td>
                 <td className="px-3 py-3"><Badge value={t.priority} /></td>
-                <td className="px-3 py-3"><Badge value={t.assigned_to || "pending"} /></td>
+                <td className="px-3 py-3"><AssigneeBadge assignedTo={t.assigned_to} assignedAgent={t.assigned_agent} /></td>
                 <td className="px-3 py-3 text-right space-x-1" onClick={e => e.stopPropagation()}>
                   {t.status === "pending" && <Button variant="ghost" size="sm" className="text-blue-600" onClick={() => claim(t.id)}>Tomar</Button>}
                   {["pending", "in_progress", "review"].includes(t.status) && <Button variant="ghost" size="sm" className="text-emerald-600" onClick={() => complete(t.id)}>Completar</Button>}
@@ -119,7 +120,7 @@ export function Tasks({ tasks, projects, refresh }: Props) {
                 <span className="text-stone-500">{projName(t.project_id) || "Sin proyecto"}</span>
                 <Badge value={t.priority} />
               </div>
-              <span className="text-stone-400">{t.assigned_to || "pending"}</span>
+              <AssigneeBadge assignedTo={t.assigned_to} assignedAgent={t.assigned_agent} />
             </div>
             <div className="flex gap-2 mt-3" onClick={e => e.stopPropagation()}>
               {t.status === "pending" && <Button variant="outline" size="sm" className="flex-1 text-blue-600" onClick={() => claim(t.id)}>Tomar</Button>}
