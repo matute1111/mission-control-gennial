@@ -38,7 +38,20 @@ export function ProjectDetailSheet({ project, tasks, projects = [], onClose, onU
   const [updates, setUpdates] = useState<ProjectUpdate[]>([])
   const [isEditing, setIsEditing] = useState(false)
   const [brief, setBrief] = useState(project?.brief || "")
-  const [roadmap, setRoadmap] = useState(project?.roadmap || "")
+  const [roadmap, setRoadmap] = useState(() => {
+    const r = project?.roadmap
+    if (!r) return ""
+    if (typeof r === "string") return r
+    if (Array.isArray(r)) {
+      return r.map((phase: any) => {
+        const label = phase.phase || phase.name || ""
+        const items = (phase.items || []).join(", ")
+        const status = phase.status ? ` [${phase.status}]` : ""
+        return `${label}${status}: ${items}`
+      }).join("\n")
+    }
+    return JSON.stringify(r)
+  })
   const [currentStatus, setCurrentStatus] = useState(project?.current_status || "")
   const [newUpdate, setNewUpdate] = useState("")
   const [updateType, setUpdateType] = useState<ProjectUpdate['update_type']>('progress')
@@ -52,7 +65,17 @@ export function ProjectDetailSheet({ project, tasks, projects = [], onClose, onU
   useEffect(() => {
     if (project) {
       setBrief(project.brief || "")
-      setRoadmap(project.roadmap || "")
+      const r = project.roadmap
+      if (!r) setRoadmap("")
+      else if (typeof r === "string") setRoadmap(r)
+      else if (Array.isArray(r)) {
+        setRoadmap(r.map((phase: any) => {
+          const label = phase.phase || phase.name || ""
+          const items = (phase.items || []).join(", ")
+          const status = phase.status ? ` [${phase.status}]` : ""
+          return `${label}${status}: ${items}`
+        }).join("\n"))
+      } else setRoadmap(JSON.stringify(r))
       setCurrentStatus(project.current_status || "")
       fetchUpdates()
       

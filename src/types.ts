@@ -17,7 +17,7 @@ export interface Project {
   created_at: string
   updated_at: string
   brief?: string           // Resumen general del proyecto
-  roadmap?: string         // Qué va a pasar / plan
+  roadmap?: string | any[]  // Qué va a pasar / plan (string or JSON array)
   current_status?: string  // Estado actual / qué se está haciendo ahora
   github_url?: string      // URL del repo
   vercel_url?: string      // URL del deploy
