@@ -1,9 +1,11 @@
+import { useState, useEffect } from "react"
 import { Sheet } from "./Sheet"
 import { Badge } from "./Badge"
 import { AssigneeBadge } from "./AssigneeBadge"
 import { Button } from "./Button"
 import { Card } from "./Card"
-import type { Task, Project } from "@/types"
+import type { Task, Project, TaskUpdate } from "@/types"
+import { supabase } from "@/lib/supabase"
 import { 
   ExternalLink, 
   Github, 
@@ -25,7 +27,10 @@ import {
   Bug,
   Lightbulb,
   Layers,
-  BookOpen
+  BookOpen,
+  History,
+  ArrowRight,
+  Plus
 } from "lucide-react"
 
 interface TaskDetailSheetProps {
@@ -35,6 +40,26 @@ interface TaskDetailSheetProps {
 }
 
 export function TaskDetailSheet({ task, project, onClose }: TaskDetailSheetProps) {
+  const [taskUpdates, setTaskUpdates] = useState<TaskUpdate[]>([])
+  const [loadingUpdates, setLoadingUpdates] = useState(false)
+
+  useEffect(() => {
+    if (!task?.id) {
+      setTaskUpdates([])
+      return
+    }
+    setLoadingUpdates(true)
+    supabase
+      .from("task_updates")
+      .select("*")
+      .eq("task_id", task.id)
+      .order("event_date", { ascending: true })
+      .then(({ data }) => {
+        setTaskUpdates(data || [])
+        setLoadingUpdates(false)
+      })
+  }, [task?.id])
+
   if (!task) return null
 
   // Extraer URLs de la descripción o resultado
@@ -93,6 +118,64 @@ export function TaskDetailSheet({ task, project, onClose }: TaskDetailSheetProps
           </div>
           <Badge value={task.status} />
         </div>
+
+        {/* TIMELINE DE SEGUIMIENTO */}
+        {taskUpdates.length > 0 && (
+          <Card className="bg-gradient-to-br from-sky-50 to-indigo-50 border-sky-200">
+            <div className="flex items-center gap-2 mb-4">
+              <History className="w-5 h-5 text-sky-600" />
+              <h4 className="text-sm font-semibold text-sky-900">📅 Seguimiento</h4>
+              <span className="ml-auto text-xs text-sky-500 bg-sky-100 px-2 py-0.5 rounded-full">
+                {taskUpdates.length} {taskUpdates.length === 1 ? 'entrada' : 'entradas'}
+              </span>
+            </div>
+            <div className="relative">
+              {/* Vertical line */}
+              <div className="absolute left-3 top-2 bottom-2 w-0.5 bg-sky-200" />
+              <div className="space-y-4">
+                {taskUpdates.map((update, i) => (
+                  <div key={update.id} className="relative flex gap-4">
+                    {/* Dot */}
+                    <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center z-10 ${
+                      i === taskUpdates.length - 1 
+                        ? 'bg-sky-500 text-white' 
+                        : 'bg-white border-2 border-sky-300 text-sky-500'
+                    }`}>
+                      <span className="text-[10px] font-bold">{i + 1}</span>
+                    </div>
+                    {/* Content */}
+                    <div className="flex-1 pb-1">
+                      <p className="text-xs text-sky-500 font-medium mb-0.5">
+                        {new Date(update.event_date).toLocaleDateString("es-AR", {
+                          day: "2-digit", month: "short", year: "numeric"
+                        })}
+                        {" · "}
+                        {new Date(update.event_date).toLocaleTimeString("es-AR", {
+                          hour: "2-digit", minute: "2-digit"
+                        })}
+                        {update.created_by && (
+                          <span className="ml-2 text-sky-400">por {update.created_by}</span>
+                        )}
+                      </p>
+                      <p className="text-sm text-stone-800">{update.description}</p>
+                      {update.outcome && (
+                        <div className="flex items-start gap-1.5 mt-1">
+                          <ArrowRight className="w-3 h-3 text-sky-400 mt-0.5 flex-shrink-0" />
+                          <p className="text-xs text-sky-700 italic">{update.outcome}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </Card>
+        )}
+        {loadingUpdates && (
+          <div className="text-center py-2">
+            <span className="text-xs text-stone-400">Cargando seguimiento...</span>
+          </div>
+        )}
 
         {/* INFO DE EJECUCIÓN - Quién lo hizo */}
         <Card className="bg-gradient-to-br from-violet-50 to-purple-50 border-violet-100">

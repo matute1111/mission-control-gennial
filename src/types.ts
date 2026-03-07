@@ -80,6 +80,16 @@ export interface Activity {
   created_at: string
 }
 
+export interface TaskUpdate {
+  id: string
+  task_id: string
+  event_date: string
+  description: string
+  outcome?: string
+  created_by: string
+  created_at: string
+}
+
 export interface ProjectUpdate {
   id: string
   project_id: string
