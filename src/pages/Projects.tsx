@@ -53,8 +53,8 @@ export function Projects({ projects, tasks, refresh }: Props) {
   }, [projects])
 
   // Separar proyectos macro y features
-  const macroProjects = projects.filter(p => p.project_type === 'macro' || !p.parent_project_id)
-  const featureProjects = projects.filter(p => p.parent_project_id || p.project_type === 'feature')
+  const macroProjects = projects.filter(p => p.is_macro === true)
+  const featureProjects = projects.filter(p => p.is_macro === false || p.parent_macro_id)
   
   // Filtrar según status
   const filteredMacros = filter === "all" ? macroProjects : macroProjects.filter(p => p.status === filter)
@@ -63,13 +63,15 @@ export function Projects({ projects, tasks, refresh }: Props) {
 
   const create = async () => {
     if (!name.trim()) return
+    const isMacro = projectType === 'macro'
     await supabase.from("projects").insert({ 
       name, 
       description: desc, 
       priority: prio, 
       created_by: "matias",
-      project_type: projectType,
-      parent_project_id: parentProjectId || null
+      type: projectType,
+      is_macro: isMacro,
+      parent_macro_id: parentProjectId || null
     })
     setName(""); setDesc(""); setPrio("medium"); setProjectType('feature'); setParentProjectId(""); setShow(false); refresh()
   }
@@ -153,7 +155,7 @@ export function Projects({ projects, tasks, refresh }: Props) {
         {filteredMacros.length === 0 && <div className="px-4 sm:px-5 py-8 text-center text-stone-400 text-sm">Sin proyectos</div>}
         
         {filteredMacros.map(macro => {
-          const macroFeatures = featureProjects.filter(m => m.parent_project_id === macro.id)
+          const macroFeatures = featureProjects.filter(m => m.parent_macro_id === macro.id)
           const isExpanded = expandedMacros.has(macro.id)
           const macroTasks = tasks.filter(t => t.project_id === macro.id)
           const macroProgress = macroTasks.length > 0 
@@ -257,7 +259,7 @@ export function Projects({ projects, tasks, refresh }: Props) {
         })}
         
         {/* Features sin macro padre (huérfanos) */}
-        {featureProjects.filter(m => !m.parent_project_id).map(micro => (
+        {featureProjects.filter(m => !m.parent_macro_id).map(micro => (
           <div 
             key={micro.id}
             className="px-5 py-4 hover:bg-stone-50 transition cursor-pointer"

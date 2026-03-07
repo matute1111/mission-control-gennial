@@ -45,8 +45,8 @@ export function ProjectDetailSheet({ project, tasks, projects = [], onClose, onU
   const [childProjects, setChildProjects] = useState<Project[]>([])
 
   // Encontrar proyecto padre si existe
-  const parentProject = project?.parent_project_id 
-    ? projects.find(p => p.id === project.parent_project_id)
+  const parentProject = project?.parent_macro_id 
+    ? projects.find(p => p.id === project.parent_macro_id)
     : null
 
   useEffect(() => {
@@ -57,8 +57,8 @@ export function ProjectDetailSheet({ project, tasks, projects = [], onClose, onU
       fetchUpdates()
       
       // Si es macro proyecto, obtener sus sub-proyectos
-      if (project.project_type === 'macro' || !project.parent_project_id) {
-        const children = projects.filter(p => p.parent_project_id === project.id)
+      if (project.is_macro === true) {
+        const children = projects.filter(p => p.parent_macro_id === project.id)
         setChildProjects(children)
       } else {
         setChildProjects([])
