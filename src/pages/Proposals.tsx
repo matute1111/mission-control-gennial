@@ -3,11 +3,11 @@ import { Badge } from "@/components/Badge"
 import { Button } from "@/components/Button"
 import { Card, CardContent } from "@/components/Card"
 import { ago } from "@/lib/utils"
-import type { Proposal } from "@/types"
+import type { Proposal, Feature, Project } from "@/types"
 
-interface Props { proposals: Proposal[]; refresh: () => void }
+interface Props { proposals: Proposal[]; projects: Project[]; features: Feature[]; refresh: () => void }
 
-export function Proposals({ proposals, refresh }: Props) {
+export function Proposals({ proposals, projects, features, refresh }: Props) {
   const pending = proposals.filter(p => p.status === "pending")
   const reviewed = proposals.filter(p => p.status !== "pending")
 

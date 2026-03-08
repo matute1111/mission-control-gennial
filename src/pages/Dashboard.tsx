@@ -1,27 +1,32 @@
 import { Badge } from "@/components/Badge"
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/Card"
 import { ago } from "@/lib/utils"
-import type { Project, Task, Proposal, Activity } from "@/types"
+import type { Project, Feature, Task, Proposal, Activity } from "@/types"
 
 interface Props {
   projects: Project[]
+  features: Feature[]
   tasks: Task[]
   proposals: Proposal[]
   activities: Activity[]
 }
 
-export function Dashboard({ projects, tasks, proposals, activities }: Props) {
+export function Dashboard({ projects, features, tasks, proposals, activities }: Props) {
   const active = projects.filter(p => p.status === "active").length
-  const pending = tasks.filter(t => t.status === "pending").length
+  const activeFeatures = features.filter(f => f.status === "in_progress").length
+  const pending = tasks.filter(t => t.status === "todo" || t.status === "in_progress" || t.status === "blocked").length
   const done = tasks.filter(t => t.status === "done").length
   const rate = tasks.length > 0 ? Math.round((done / tasks.length) * 100) : 0
   const pendingP = proposals.filter(p => p.status === "pending").length
+  
+  // Critical tasks (impact × urgency >= 20)
+  const criticalTasks = tasks.filter(t => (t.impact || 1) * (t.urgency || 1) >= 20)
 
   const kpis = [
     { l: "Proyectos activos", v: active, c: "text-emerald-600" },
-    { l: "Tareas pendientes", v: pending, c: "text-amber-600" },
+    { l: "Features en progreso", v: activeFeatures, c: "text-amber-600" },
+    { l: "Tareas críticas", v: criticalTasks.length, c: criticalTasks.length > 0 ? "text-red-600" : "text-stone-600" },
     { l: "Completion rate", v: `${rate}%`, c: "text-blue-600" },
-    { l: "Proposals pendientes", v: pendingP, c: pendingP > 0 ? "text-red-600" : "text-stone-600" },
   ]
 
   return (

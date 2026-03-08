@@ -5,7 +5,7 @@ import { Button } from "./Button"
 import { Card } from "./Card"
 import { Textarea } from "./Textarea"
 import { supabase } from "@/lib/supabase"
-import type { Project, Task, ProjectUpdate } from "@/types"
+import type { Project, Feature, Task, ProjectUpdate } from "@/types"
 import { 
   ExternalLink, 
   Github, 
@@ -28,13 +28,13 @@ import {
 
 interface ProjectDetailSheetProps {
   project: Project | null
+  features: Feature[]
   tasks: Task[]
-  projects?: Project[]  // Todos los proyectos para mostrar jerarquía
   onClose: () => void
   onUpdate?: () => void
 }
 
-export function ProjectDetailSheet({ project, tasks, projects = [], onClose, onUpdate }: ProjectDetailSheetProps) {
+export function ProjectDetailSheet({ project, features, tasks, onClose, onUpdate }: ProjectDetailSheetProps) {
   const [updates, setUpdates] = useState<ProjectUpdate[]>([])
   const [isEditing, setIsEditing] = useState(false)
   const [brief, setBrief] = useState(project?.brief || "")
@@ -55,12 +55,16 @@ export function ProjectDetailSheet({ project, tasks, projects = [], onClose, onU
   const [currentStatus, setCurrentStatus] = useState(project?.current_status || "")
   const [newUpdate, setNewUpdate] = useState("")
   const [updateType, setUpdateType] = useState<ProjectUpdate['update_type']>('progress')
-  const [childProjects, setChildProjects] = useState<Project[]>([])
 
-  // Encontrar proyecto padre si existe
-  const parentProject = project?.parent_macro_id 
-    ? projects.find(p => p.id === project.parent_macro_id)
-    : null
+  // Get features for this project
+  const projectFeatures = project 
+    ? features.filter(f => f.project_id === project.id && !f.archived_at)
+    : []
+
+  // Get tasks for all features of this project
+  const projectTasks = projectFeatures.flatMap(f => 
+    tasks.filter(t => t.feature_id === f.id && !t.archived_at)
+  )
 
   useEffect(() => {
     if (project) {
@@ -78,16 +82,8 @@ export function ProjectDetailSheet({ project, tasks, projects = [], onClose, onU
       } else setRoadmap(JSON.stringify(r))
       setCurrentStatus(project.current_status || "")
       fetchUpdates()
-      
-      // Si es macro proyecto, obtener sus sub-proyectos
-      if (project.is_macro === true) {
-        const children = projects.filter(p => p.parent_macro_id === project.id)
-        setChildProjects(children)
-      } else {
-        setChildProjects([])
-      }
     }
-  }, [project, projects])
+  }, [project])
 
   const fetchUpdates = async () => {
     if (!project) return
@@ -119,12 +115,11 @@ export function ProjectDetailSheet({ project, tasks, projects = [], onClose, onU
     })
     setNewUpdate("")
     fetchUpdates()
-    onUpdate?.() // Refresca la lista de proyectos para mostrar el último update
+    onUpdate?.()
   }
 
   if (!project) return null
 
-  const projectTasks = tasks.filter(t => t.project_id === project.id)
   const completedTasks = projectTasks.filter(t => t.status === "done")
   const progress = projectTasks.length > 0 
     ? Math.round((completedTasks.length / projectTasks.length) * 100) 
@@ -145,7 +140,7 @@ export function ProjectDetailSheet({ project, tasks, projects = [], onClose, onU
     switch (status) {
       case "active": return "bg-emerald-100 text-emerald-700"
       case "archived": return "bg-stone-100 text-stone-700"
-      case "cancelled": return "bg-red-100 text-red-700"
+      case "paused": return "bg-amber-100 text-amber-700"
       default: return "bg-stone-100 text-stone-700"
     }
   }
@@ -159,6 +154,12 @@ export function ProjectDetailSheet({ project, tasks, projects = [], onClose, onU
       case 'note': return 'bg-stone-100 text-stone-700'
       default: return 'bg-stone-100 text-stone-700'
     }
+  }
+
+  const getFeatureProgress = (featureId: string) => {
+    const featureTasks = tasks.filter(t => t.feature_id === featureId && !t.archived_at)
+    if (featureTasks.length === 0) return 0
+    return Math.round((featureTasks.filter(t => t.status === "done").length / featureTasks.length) * 100)
   }
 
   return (
@@ -178,51 +179,62 @@ export function ProjectDetailSheet({ project, tasks, projects = [], onClose, onU
           </span>
         </div>
 
-        {/* JERARQUÍA - Macro/Sub-proyectos */}
-        {(parentProject || childProjects.length > 0) && (
+        {/* Priority Score */}
+        {(project.impact && project.urgency) && (
+          <Card className="bg-gradient-to-br from-amber-50 to-orange-50 border-amber-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-amber-600 font-medium mb-1">Prioridad</p>
+                <p className="text-2xl font-bold text-amber-800">
+                  {project.impact} × {project.urgency} = <span className="text-3xl">{(project.impact || 1) * (project.urgency || 1)}</span>
+                </p>
+              </div>
+              {project.strategic_value && (
+                <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                  project.strategic_value === 'core' ? 'bg-purple-100 text-purple-700' :
+                  project.strategic_value === 'supporting' ? 'bg-blue-100 text-blue-700' :
+                  'bg-stone-100 text-stone-700'
+                }`}>
+                  {project.strategic_value}
+                </span>
+              )}
+            </div>
+          </Card>
+        )}
+
+        {/* FEATURES */}
+        {projectFeatures.length > 0 && (
           <Card className="bg-violet-50 border-violet-100">
             <div className="flex items-center gap-2 mb-3">
               <FolderOpen className="w-5 h-5 text-violet-600" />
-              <h4 className="text-sm font-semibold text-violet-900">🗂️ Jerarquía</h4>
+              <h4 className="text-sm font-semibold text-violet-900">🗂️ Features ({projectFeatures.length})</h4>
             </div>
             
-            {/* Si es feature, mostrar macro padre */}
-            {parentProject && (
-              <div className="mb-3">
-                <p className="text-xs text-violet-600 mb-1">Feature de:</p>
-                <div className="flex items-center gap-2 p-2 bg-white rounded-lg border border-violet-200">
-                  <FolderOpen className="w-4 h-4 text-blue-500" />
-                  <span className="text-sm font-medium text-stone-800">{parentProject.name}</span>
-                  <Badge value={parentProject.status} />
-                </div>
-              </div>
-            )}
-            
-            {/* Si es macro, mostrar features */}
-            {childProjects.length > 0 && (
-              <div>
-                <p className="text-xs text-violet-600 mb-1">Features ({childProjects.length}):</p>
-                <div className="space-y-2">
-                  {childProjects.map(child => {
-                    const childTaskCount = tasks.filter(t => t.project_id === child.id).length
-                    return (
-                      <div key={child.id} className="flex items-center justify-between p-2 bg-white rounded-lg border border-violet-200">
-                        <div className="flex items-center gap-2">
-                          <Folder className="w-4 h-4 text-amber-500" />
-                          <span className="text-sm text-stone-700">{child.name}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {childTaskCount > 0 && (
-                            <span className="text-xs text-stone-400">{childTaskCount} tareas</span>
-                          )}
-                          <Badge value={child.status} />
+            <div className="space-y-2">
+              {projectFeatures.map(feature => {
+                const featureProgress = getFeatureProgress(feature.id)
+                const featureScore = (feature.impact || 1) * (feature.urgency || 1)
+                return (
+                  <div key={feature.id} className="flex items-center justify-between p-2 bg-white rounded-lg border border-violet-200">
+                    <div className="flex items-center gap-2">
+                      <Folder className="w-4 h-4 text-amber-500" />
+                      <div>
+                        <span className="text-sm text-stone-700">{feature.name}</span>
+                        <div className="flex items-center gap-1 text-xs text-stone-400">
+                          <span className={`px-1 rounded ${featureScore >= 20 ? 'bg-red-100 text-red-600' : 'bg-stone-100'}`}>
+                            {feature.impact || 1}×{feature.urgency || 1}
+                          </span>
+                          {featureProgress > 0 && <span>• {featureProgress}%</span>}
                         </div>
                       </div>
-                    )
-                  })}
-                </div>
-              </div>
-            )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge value={feature.status} />
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
           </Card>
         )}
 
@@ -453,90 +465,6 @@ export function ProjectDetailSheet({ project, tasks, projects = [], onClose, onU
             </div>
           </div>
         )}
-
-        {/* Recursos y Herramientas */}
-        <div className="pt-4 border-t border-stone-100">
-          <h4 className="text-sm font-medium text-stone-700 mb-3">🛠️ Recursos y Herramientas</h4>
-          <div className="grid grid-cols-2 gap-2">
-            <a
-              href="https://github.com/matute1111"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 p-2 text-sm text-stone-600 hover:bg-stone-50 rounded-lg transition"
-            >
-              <Github className="w-4 h-4" />
-              <span>GitHub</span>
-            </a>
-            <a
-              href="https://supabase.com/dashboard"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 p-2 text-sm text-stone-600 hover:bg-stone-50 rounded-lg transition"
-            >
-              <ExternalLink className="w-4 h-4" />
-              <span>Supabase</span>
-            </a>
-            <a
-              href="https://vercel.com/dashboard"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 p-2 text-sm text-stone-600 hover:bg-stone-50 rounded-lg transition"
-            >
-              <ExternalLink className="w-4 h-4" />
-              <span>Vercel</span>
-            </a>
-            <a
-              href="https://my.blotato.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 p-2 text-sm text-stone-600 hover:bg-stone-50 rounded-lg transition"
-            >
-              <ExternalLink className="w-4 h-4" />
-              <span>Blotato</span>
-            </a>
-          </div>
-        </div>
-
-        {/* API Keys */}
-        <div className="pt-4 border-t border-stone-100">
-          <h4 className="text-sm font-medium text-stone-700 mb-3 flex items-center gap-2">
-            <LinkIcon className="w-4 h-4" />
-            API Keys Guardadas
-          </h4>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between p-2 bg-amber-50 rounded-lg border border-amber-100">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-amber-800">Supabase</span>
-                <span className="text-xs text-amber-600">(oculto)</span>
-              </div>
-              <a 
-                href="https://supabase.com/dashboard/project/_/settings/api"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-amber-700 hover:underline"
-              >
-                Ver en Dashboard →
-              </a>
-            </div>
-            <div className="flex items-center justify-between p-2 bg-blue-50 rounded-lg border border-blue-100">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-blue-800">Blotato</span>
-                <span className="text-xs text-blue-600">(oculto)</span>
-              </div>
-              <a 
-                href="https://my.blotato.com/settings"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-blue-700 hover:underline"
-              >
-                Ver en Dashboard →
-              </a>
-            </div>
-          </div>
-          <p className="text-xs text-stone-400 mt-2">
-            Las API keys se gestionan en los dashboards correspondientes por seguridad.
-          </p>
-        </div>
 
         {/* Acciones */}
         <div className="flex gap-3 pt-4 border-t border-stone-100">
