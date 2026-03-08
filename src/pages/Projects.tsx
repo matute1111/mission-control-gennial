@@ -9,19 +9,24 @@ import { Textarea } from "@/components/Textarea"
 import { Select } from "@/components/Select"
 import { ProjectDetailSheet } from "@/components/ProjectDetailSheet"
 import { cn, ago } from "@/lib/utils"
-import type { Project, Task, ProjectUpdate } from "@/types"
-import { Plus, Activity, Folder, FolderOpen, ChevronRight } from "lucide-react"
+import type { Project, Feature, Task, ProjectUpdate } from "@/types"
+import { Plus, Activity, Folder, FolderOpen, ChevronRight, Target } from "lucide-react"
 
-interface Props { projects: Project[]; tasks: Task[]; refresh: () => void }
+interface Props { 
+  projects: Project[]
+  features: Feature[]
+  tasks: Task[]
+  refresh: () => void 
+}
 
-export function Projects({ projects, tasks, refresh }: Props) {
+export function Projects({ projects, features, tasks, refresh }: Props) {
   const [filter, setFilter] = useState("all")
   const [show, setShow] = useState(false)
   const [name, setName] = useState("")
   const [desc, setDesc] = useState("")
-  const [prio, setPrio] = useState("medium")
-  const [projectType, setProjectType] = useState<'macro' | 'feature'>('feature')
-  const [parentProjectId, setParentProjectId] = useState("")
+  const [impact, setImpact] = useState(3)
+  const [urgency, setUrgency] = useState(3)
+  const [strategicValue, setStrategicValue] = useState<'core' | 'supporting' | 'experimental'>('supporting')
   const [selectedProject, setSelectedProject] = useState<Project | null>(null)
   const [latestUpdates, setLatestUpdates] = useState<Record<string, ProjectUpdate>>({})
   const [expandedMacros, setExpandedMacros] = useState<Set<string>>(new Set())
@@ -52,41 +57,62 @@ export function Projects({ projects, tasks, refresh }: Props) {
     fetchLatestUpdates()
   }, [projects])
 
-  // Separar proyectos macro y features
-  const macroProjects = projects.filter(p => p.is_macro === true)
-  const featureProjects = projects.filter(p => p.is_macro === false || p.parent_macro_id)
+  // Features por proyecto
+  const getFeaturesByProject = (projectId: string) => {
+    return features.filter(f => f.project_id === projectId && !f.archived_at)
+  }
+
+  // Tasks por feature
+  const getTasksByFeature = (featureId: string) => {
+    return tasks.filter(t => t.feature_id === featureId && !t.archived_at)
+  }
+
+  // Filtrar proyectos
+  const filteredProjects = filter === "all" 
+    ? projects 
+    : projects.filter(p => p.status === filter)
   
-  // Filtrar según status
-  const filteredMacros = filter === "all" ? macroProjects : macroProjects.filter(p => p.status === filter)
-  
-  const tabs = ["all", "active", "paused", "done", "cancelled"]
+  const tabs = ["all", "active", "completed", "paused"]
 
   const create = async () => {
     if (!name.trim()) return
-    const isMacro = projectType === 'macro'
-    await supabase.from("projects").insert({ 
+    
+    const { error } = await supabase.from("projects").insert({ 
       name, 
       description: desc, 
-      priority: prio, 
+      impact,
+      urgency,
+      strategic_value: strategicValue,
+      status: 'active',
       created_by: "matias",
-      type: projectType,
-      is_macro: isMacro,
-      parent_macro_id: parentProjectId || null
     })
-    setName(""); setDesc(""); setPrio("medium"); setProjectType('feature'); setParentProjectId(""); setShow(false); refresh()
+    
+    if (error) {
+      console.error("Error creating project:", error)
+      return
+    }
+    
+    setName("")
+    setDesc("")
+    setImpact(3)
+    setUrgency(3)
+    setStrategicValue('supporting')
+    setShow(false)
+    refresh()
   }
 
-  const complete = async (id: string) => {
-    await supabase.from("projects").update({ status: "done" }).eq("id", id); refresh()
+  const archiveProject = async (id: string) => {
+    await supabase.rpc('archive_record', { p_table: 'projects', p_id: id })
+    refresh()
   }
 
-  const toggleMacro = (macroId: string, e: React.MouseEvent) => {
+  const toggleMacro = (projectId: string, e: React.MouseEvent) => {
     e.stopPropagation()
     const newExpanded = new Set(expandedMacros)
-    if (newExpanded.has(macroId)) {
-      newExpanded.delete(macroId)
+    if (newExpanded.has(projectId)) {
+      newExpanded.delete(projectId)
     } else {
-      newExpanded.add(macroId)
+      newExpanded.add(projectId)
     }
     setExpandedMacros(newExpanded)
   }
@@ -109,7 +135,6 @@ export function Projects({ projects, tasks, refresh }: Props) {
                 <span className={`text-[10px] px-1 py-0.5 rounded ${
                   lastUpdate.update_type === 'milestone' ? 'bg-emerald-100 text-emerald-700' :
                   lastUpdate.update_type === 'blocker' ? 'bg-red-100 text-red-700' :
-                  lastUpdate.update_type === 'decision' ? 'bg-blue-100 text-blue-700' :
                   lastUpdate.update_type === 'progress' ? 'bg-amber-100 text-amber-700' :
                   'bg-stone-100 text-stone-600'
                 }`}>
@@ -136,6 +161,15 @@ export function Projects({ projects, tasks, refresh }: Props) {
     return null
   }
 
+  const getProjectScore = (p: Project) => (p.impact || 1) * (p.urgency || 1)
+
+  const getScoreColor = (score: number) => {
+    if (score >= 20) return 'text-red-600 bg-red-50'
+    if (score >= 15) return 'text-orange-600 bg-orange-50'
+    if (score >= 10) return 'text-amber-600 bg-amber-50'
+    return 'text-stone-600 bg-stone-100'
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -152,27 +186,28 @@ export function Projects({ projects, tasks, refresh }: Props) {
       </div>
 
       <Card className="divide-y divide-stone-50 overflow-hidden">
-        {filteredMacros.length === 0 && <div className="px-4 sm:px-5 py-8 text-center text-stone-400 text-sm">Sin proyectos</div>}
+        {filteredProjects.length === 0 && <div className="px-4 sm:px-5 py-8 text-center text-stone-400 text-sm">Sin proyectos</div>}
         
-        {filteredMacros.map(macro => {
-          const macroFeatures = featureProjects.filter(m => m.parent_macro_id === macro.id)
-          const isExpanded = expandedMacros.has(macro.id)
-          const macroTasks = tasks.filter(t => t.project_id === macro.id)
-          const macroProgress = macroTasks.length > 0 
-            ? Math.round((macroTasks.filter(t => t.status === "done").length / macroTasks.length) * 100)
+        {filteredProjects.sort((a, b) => getProjectScore(b) - getProjectScore(a)).map(project => {
+          const projectFeatures = getFeaturesByProject(project.id)
+          const isExpanded = expandedMacros.has(project.id)
+          const score = getProjectScore(project)
+          const projectTasks = projectFeatures.flatMap(f => getTasksByFeature(f.id))
+          const projectProgress = projectTasks.length > 0 
+            ? Math.round((projectTasks.filter(t => t.status === "done").length / projectTasks.length) * 100)
             : 0
           
           return (
-            <div key={macro.id} className="bg-stone-50/50">
-              {/* MACRO PROYECTO */}
+            <div key={project.id} className="bg-stone-50/50">
+              {/* PROYECTO */}
               <div 
                 className="px-5 py-4 hover:bg-stone-100 transition cursor-pointer border-l-4 border-blue-400"
-                onClick={() => setSelectedProject(macro)}
+                onClick={() => setSelectedProject(project)}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <button 
-                      onClick={(e) => toggleMacro(macro.id, e)}
+                      onClick={(e) => toggleMacro(project.id, e)}
                       className="p-1 hover:bg-stone-200 rounded transition"
                     >
                       <ChevronRight className={cn("w-4 h-4 text-stone-400 transition-transform", isExpanded && "rotate-90")} />
@@ -180,76 +215,89 @@ export function Projects({ projects, tasks, refresh }: Props) {
                     <div className="flex items-center gap-2">
                       <FolderOpen className="w-5 h-5 text-blue-500" />
                       <div>
-                        <div className="font-semibold text-stone-900">{macro.name}</div>
+                        <div className="font-semibold text-stone-900">{project.name}</div>
                         <div className="flex items-center gap-2 text-xs text-stone-500">
-                          <span>Macro Proyecto</span>
-                          {macroFeatures.length > 0 && (
-                            <span>• {macroFeatures.length} features</span>
+                          <span className={cn("px-1.5 py-0.5 rounded text-[10px] font-medium", getScoreColor(score))}>
+                            {project.impact || 1}×{project.urgency || 1} = {score}
+                          </span>
+                          {project.strategic_value && (
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-purple-100 text-purple-700">
+                              {project.strategic_value}
+                            </span>
                           )}
-                          {macroTasks.length > 0 && (
-                            <span>• {macroProgress}% tasks</span>
+                          {projectFeatures.length > 0 && (
+                            <span>• {projectFeatures.length} features</span>
+                          )}
+                          {projectTasks.length > 0 && (
+                            <span>• {projectProgress}% tasks</span>
                           )}
                         </div>
                       </div>
                     </div>
                   </div>
                   <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
-                    <Badge value={macro.status} />
-                    <Badge value={macro.priority} />
-                    {macro.status === "active" && (
-                      <Button variant="ghost" size="sm" onClick={() => complete(macro.id)} className="text-emerald-600">Completar</Button>
+                    <Badge value={project.status} />
+                    {project.status !== "archived" && (
+                      <Button variant="ghost" size="sm" onClick={() => archiveProject(project.id)} className="text-stone-400 hover:text-red-600">
+                        Archivar
+                      </Button>
                     )}
                   </div>
                 </div>
                 
-                {renderProjectStatus(macro)}
+                {renderProjectStatus(project)}
               </div>
               
-              {/* FEATURES (hijos del macro) */}
-              {isExpanded && macroFeatures.length > 0 && (
+              {/* FEATURES */}
+              {isExpanded && projectFeatures.length > 0 && (
                 <div className="bg-white">
-                  {macroFeatures.map(micro => {
-                    const microTasks = tasks.filter(t => t.project_id === micro.id)
-                    const microProgress = microTasks.length > 0
-                      ? Math.round((microTasks.filter(t => t.status === "done").length / microTasks.length) * 100)
+                  {projectFeatures.sort((a, b) => ((b.impact || 1) * (b.urgency || 1)) - ((a.impact || 1) * (a.urgency || 1))).map(feature => {
+                    const featureTasks = getTasksByFeature(feature.id)
+                    const featureProgress = featureTasks.length > 0
+                      ? Math.round((featureTasks.filter(t => t.status === "done").length / featureTasks.length) * 100)
                       : 0
+                    const featureScore = (feature.impact || 1) * (feature.urgency || 1)
                     
                     return (
                       <div 
-                        key={micro.id}
+                        key={feature.id}
                         className="px-5 py-3 pl-16 hover:bg-stone-50 transition cursor-pointer border-l-4 border-transparent hover:border-amber-300"
-                        onClick={() => setSelectedProject(micro)}
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <Folder className="w-4 h-4 text-amber-500" />
                             <div>
-                              <div className="font-medium text-stone-800">{micro.name}</div>
+                              <div className="font-medium text-stone-800">{feature.name}</div>
                               <div className="flex items-center gap-2 text-xs text-stone-400">
-                                <span>Feature</span>
-                                {microTasks.length > 0 && (
-                                  <span>• {microTasks.length} tareas ({microProgress}%)</span>
+                                <span className={cn("px-1 rounded text-[10px]", getScoreColor(featureScore))}>
+                                  {feature.impact || 1}×{feature.urgency || 1}
+                                </span>
+                                {featureTasks.length > 0 && (
+                                  <span>• {featureTasks.length} tareas ({featureProgress}%)</span>
+                                )}
+                                {feature.progress !== undefined && feature.progress > 0 && (
+                                  <span>• progreso: {feature.progress}%</span>
                                 )}
                               </div>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
-                            <Badge value={micro.status} />
-                            <Badge value={micro.priority} />
-                            {micro.status === "active" && (
-                              <Button variant="ghost" size="sm" onClick={() => complete(micro.id)} className="text-emerald-600">Completar</Button>
-                            )}
+                          <div className="flex items-center gap-2">
+                            <Badge value={feature.status} />
                           </div>
                         </div>
                         
-                        {renderProjectStatus(micro)}
+                        {feature.current_status && (
+                          <div className="mt-1 text-xs text-amber-600 truncate">
+                            ▶️ {feature.current_status}
+                          </div>
+                        )}
                       </div>
                     )
                   })}
                 </div>
               )}
               
-              {isExpanded && macroFeatures.length === 0 && (
+              {isExpanded && projectFeatures.length === 0 && (
                 <div className="px-5 py-3 pl-16 text-xs text-stone-400 italic">
                   Sin features
                 </div>
@@ -257,34 +305,6 @@ export function Projects({ projects, tasks, refresh }: Props) {
             </div>
           )
         })}
-        
-        {/* Features sin macro padre (huérfanos) */}
-        {featureProjects.filter(m => !m.parent_macro_id).map(micro => (
-          <div 
-            key={micro.id}
-            className="px-5 py-4 hover:bg-stone-50 transition cursor-pointer"
-            onClick={() => setSelectedProject(micro)}
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Folder className="w-4 h-4 text-stone-400" />
-                <div>
-                  <div className="font-medium text-stone-900">{micro.name}</div>
-                  <div className="text-xs text-stone-400">Sin macro proyecto</div>
-                </div>
-              </div>
-              <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
-                <Badge value={micro.status} />
-                <Badge value={micro.priority} />
-                {micro.status === "active" && (
-                  <Button variant="ghost" size="sm" onClick={() => complete(micro.id)} className="text-emerald-600">Completar</Button>
-                )}
-              </div>
-            </div>
-            
-            {renderProjectStatus(micro)}
-          </div>
-        ))}
       </Card>
 
       <Dialog open={show} onClose={() => setShow(false)}>
@@ -294,27 +314,37 @@ export function Projects({ projects, tasks, refresh }: Props) {
           <Textarea placeholder="Descripcion" value={desc} onChange={e => setDesc(e.target.value)} />
           
           <div className="grid grid-cols-2 gap-3">
-            <Select value={prio} onChange={e => setPrio(e.target.value)}>
-              <option value="critical">Critical</option>
-              <option value="high">High</option>
-              <option value="medium">Medium</option>
-              <option value="low">Low</option>
-            </Select>
+            <div>
+              <label className="text-xs text-stone-500">Impact (1-5)</label>
+              <Select value={impact.toString()} onChange={e => setImpact(parseInt(e.target.value))}>
+                <option value="1">1 - Negligible</option>
+                <option value="2">2 - Minor</option>
+                <option value="3">3 - Moderate</option>
+                <option value="4">4 - Significant</option>
+                <option value="5">5 - Game-changer</option>
+              </Select>
+            </div>
             
-            <Select value={projectType} onChange={e => setProjectType(e.target.value as 'macro' | 'feature')}>
-              <option value="feature">Feature</option>
-              <option value="macro">Macro Proyecto</option>
-            </Select>
+            <div>
+              <label className="text-xs text-stone-500">Urgency (1-5)</label>
+              <Select value={urgency.toString()} onChange={e => setUrgency(parseInt(e.target.value))}>
+                <option value="1">1 - Whenever</option>
+                <option value="2">2 - This month</option>
+                <option value="3">3 - This week</option>
+                <option value="4">4 - Next 48h</option>
+                <option value="5">5 - Today</option>
+              </Select>
+            </div>
           </div>
           
-          {projectType === 'feature' && (
-            <Select value={parentProjectId} onChange={e => setParentProjectId(e.target.value)}>
-              <option value="">Sin macro proyecto</option>
-              {macroProjects.map(p => (
-                <option key={p.id} value={p.id}>{p.name}</option>
-              ))}
+          <div>
+            <label className="text-xs text-stone-500">Strategic Value</label>
+            <Select value={strategicValue} onChange={e => setStrategicValue(e.target.value as any)}>
+              <option value="core">Core</option>
+              <option value="supporting">Supporting</option>
+              <option value="experimental">Experimental</option>
             </Select>
-          )}
+          </div>
           
           <div className="flex gap-2 justify-end pt-2">
             <Button variant="ghost" onClick={() => setShow(false)}>Cancelar</Button>
@@ -325,8 +355,8 @@ export function Projects({ projects, tasks, refresh }: Props) {
 
       <ProjectDetailSheet 
         project={selectedProject}
+        features={features}
         tasks={tasks}
-        projects={projects}
         onClose={() => setSelectedProject(null)}
         onUpdate={refresh}
       />
