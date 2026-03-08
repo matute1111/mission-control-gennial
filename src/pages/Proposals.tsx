@@ -34,7 +34,7 @@ export function Proposals({ proposals, projects, features, refresh }: Props) {
                     <div className="font-semibold text-stone-900">{p.title || p.category}</div>
                     <div className="flex items-center gap-2 mt-1">
                       <Badge value={p.proposed_by} />
-                      <Badge value={p.category} />
+                      <Badge value={p.category || "general"} />
                       <span className="text-xs text-stone-400 font-mono">{ago(p.created_at)}</span>
                     </div>
                   </div>

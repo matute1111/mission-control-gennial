@@ -47,10 +47,10 @@ export function Dashboard({ projects, features, tasks, proposals, activities }: 
         <div className="divide-y divide-stone-50">
           {activities.slice(0, 15).map(a => (
             <div key={a.id} className="px-5 py-3 flex items-start gap-3">
-              <Badge value={a.agent} />
+              <Badge value={a.actor} />
               <div className="flex-1 min-w-0">
                 <div className="text-sm text-stone-800">{a.action}</div>
-                {a.reasoning && <div className="text-xs text-stone-500 mt-0.5 truncate">{a.reasoning}</div>}
+                {a.detail && <div className="text-xs text-stone-500 mt-0.5 truncate">{a.detail}</div>}
               </div>
               <span className="text-[10px] text-stone-400 font-mono whitespace-nowrap">{ago(a.created_at)}</span>
             </div>

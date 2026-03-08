@@ -103,7 +103,7 @@ export function Tasks({ tasks, features, projects, refresh }: Props) {
               </div>
               <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
                 <Badge value={t.status} />
-                <AssigneeBadge name={t.assigned_to} />
+                <AssigneeBadge assignedTo={t.assigned_to} assignedAgent={t.assigned_agent} />
                 {t.status !== "done" && (
                   <>
                     {!t.assigned_to || t.assigned_to === "kimi" ? (

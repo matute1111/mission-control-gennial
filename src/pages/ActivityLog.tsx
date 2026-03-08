@@ -13,11 +13,11 @@ export function ActivityLog({ activities }: Props) {
         {activities.map(a => (
           <div key={a.id} className="px-5 py-4">
             <div className="flex items-center gap-2 mb-1">
-              <Badge value={a.agent} />
+              <Badge value={a.actor} />
               <span className="text-sm font-medium text-stone-800">{a.action}</span>
               <span className="text-[10px] text-stone-400 font-mono ml-auto">{ago(a.created_at)}</span>
             </div>
-            {a.reasoning && <div className="text-xs text-stone-500 ml-16">{a.reasoning}</div>}
+            {a.detail && <div className="text-xs text-stone-500 ml-16">{a.detail}</div>}
             {a.result && <div className="text-xs text-emerald-600 ml-16 mt-0.5">{a.result}</div>}
           </div>
         ))}
