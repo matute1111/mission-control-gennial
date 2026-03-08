@@ -27,35 +27,84 @@ Mission Control is the operational backend for Gennial Studios. It manages proje
 ### Hierarchy: Project → Feature → Task
 
 ```
-PROJECT (Gennial Growth) [Priority: 8/10]
-├── FEATURE: Skill Acquisition Engine [Priority: 8/10]
-│   ├── TASK: Install marketing-drafter [Priority: 8/10]
-│   ├── TASK: Install ai-lead-generator [Priority: 8/10]
-│   └── TASK: Install proposal-writer [Priority: 5/10]
+PROJECT (Gennial Growth) [Score: 24]
+├── strategic_value: core
+├── impact: 4, urgency: 5, score: 20
 │
-├── FEATURE: Oportunidades de Negocio [Priority: 8/10]
-│   └── TASK: Configurar RSS feeds [Priority: 7/10]
+├── FEATURE: Skill Acquisition Engine [Score: 20]
+│   ├── impact: 4, urgency: 5
+│   │
+│   └── TASK: Install marketing-drafter [Score: 20]
+│       ├── impact: 4, urgency: 5
+│       └── status: todo
 │
-└── FEATURE: Content Generation [Priority: 5/10]
-    └── TASK: Crear templates [Priority: 6/10]
+└── FEATURE: Oportunidades de Negocio [Score: 16]
+    ├── impact: 4, urgency: 4
+    └── TASK: Configurar RSS feeds [Score: 12]
+        ├── impact: 3, urgency: 4
+        └── status: in_progress
 ```
 
-### Priority System
+### Priority System (Impact × Urgency)
 
-**Project Priority (1-10):** Overall importance of the project  
-**Task Priority (1-10):** Importance within the project
+**Two-dimensional scoring:**
 
-**Alert Formula:**
+| Dimension | Range | Description |
+|-----------|-------|-------------|
+| **Impact** | 1-5 | How much it moves the needle |
+| **Urgency** | 1-5 | How soon it needs to be done |
+
+**Score Formula:**
 ```
-Average = (Project Priority + Task Priority) / 2
+Score = Impact × Urgency
 
-If Average > 8 → 🚨 Alert Matias
-If Average ≤ 8 → 😴 Continue silently
+Range: 1 (minimum) to 25 (maximum)
 ```
 
-**Example:**
-- Project: 9 (HIGH) + Task: 8 (HIGH) = Average 8.5 → 🚨 ALERT
-- Project: 5 (MED) + Task: 6 (MED) = Average 5.5 → 😴 No alert
+**Critical Override:**
+- If `priority = 'critical'` → Score = 25 (regardless of calculation)
+
+**For Projects - Additional Field:**
+- **strategic_value**: `core` | `supporting` | `experimental`
+- Used as tie-breaker when scores are equal
+- Order: `core` > `supporting` > `experimental`
+
+### Impact Scale (1-5)
+
+| Value | Meaning | Example |
+|-------|---------|---------|
+| 5 | Unlocks external deliverable or client presentation | Demo WoMM ready for meeting |
+| 4 | Advances core project in critical phase | Video pipeline working end-to-end |
+| 3 | Significant internal operational improvement | Heartbeat with complete fields |
+| 2 | Minor fix or improvement without external dependencies | UI component refactor |
+| 1 | Cosmetic, internal documentation, nice-to-have | README typo fix |
+
+### Urgency Scale (1-5)
+
+| Value | Meaning | Time Criteria |
+|-------|---------|---------------|
+| 5 | Deadline in less than 24 hours | Meeting tomorrow, demo in 2 hours |
+| 4 | Deadline in less than 72 hours | This week, client waiting |
+| 3 | Deadline in less than 2 weeks | Active sprint, pressure exists |
+| 2 | Deadline in less than 1 month | Active backlog, no immediate pressure |
+| 1 | No deadline defined | Indefinite backlog |
+
+### Strategic Value (Projects only)
+
+| Value | Meaning | Example |
+|-------|---------|---------|
+| `core` | Central to presentation or main deliverable | WoMM, 6-week presentation |
+| `supporting` | Enables or improves a core project | Mission Control, OpenClaw config |
+| `experimental` | Exploration without external commitment | Cliffy, model testing |
+
+### Color Coding (Frontend)
+
+| Score Range | Color | Priority |
+|-------------|-------|----------|
+| 20-25 | 🔴 Red | Critical |
+| 12-19 | 🟠 Orange | High |
+| 6-11 | 🟡 Yellow | Medium |
+| 1-5 | ⚪ Gray | Low |
 
 ## Database Schema
 
@@ -69,7 +118,11 @@ If Average ≤ 8 → 😴 Continue silently
 | description | text | Project description | "Autonomía Kimi" |
 | status | text | Current status | `active`, `completed`, `archived` |
 | content_type | text | Category | `project`, `macro` |
-| metadata | jsonb | Custom data | `{"priority": 8, "owner": "kimi"}` |
+| **impact** | int | Impact 1-5 | 4 |
+| **urgency** | int | Urgency 1-5 | 5 |
+| **priority_score** | int | Computed: impact × urgency | 20 |
+| **strategic_value** | text | `core`, `supporting`, `experimental` | `supporting` |
+| metadata | jsonb | Custom data | `{"owner": "kimi"}` |
 | created_by | text | Creator | `kimi`, `matias` |
 | created_at | timestamptz | Creation time | `2026-03-07T20:00:00Z` |
 
@@ -81,6 +134,9 @@ If Average ≤ 8 → 😴 Continue silently
 | event_type | text | Type | `feature`, `task` |
 | description | text | Name/description | "Skill Acquisition Engine" |
 | status | text | Current status | `todo`, `in_progress`, `blocked`, `completed` |
+| **impact** | int | Impact 1-5 | 4 |
+| **urgency** | int | Urgency 1-5 | 5 |
+| **priority_score** | int | Computed: impact × urgency | 20 |
 | intensity | int | Effort level (1-10) | 8 = High effort |
 | metadata | jsonb | Custom data | See below |
 | start_time | timestamptz | Start date | `2026-03-07T00:00:00Z` |
@@ -342,63 +398,101 @@ def create_task(project_id, feature_id, feature_name, description, priority=5):
     )
     return r.json()[0] if r.status_code == 201 else None
 
-def get_critical_tasks(threshold=8):
-    """Get tasks with average priority > threshold."""
-    critical = []
+def get_critical_tasks(threshold=20):
+    """Get tasks with priority_score >= threshold."""
+    headers = {"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}"}
     
-    # Get all pending tasks
+    # Get all pending tasks with score >= threshold
     r = requests.get(
-        f"{SUPABASE_URL}/rest/v1/highlight_events?event_type=eq.task&status=in.(todo,in_progress,blocked)",
+        f"{SUPABASE_URL}/rest/v1/highlight_events?"
+        f"event_type=eq.task&"
+        f"status=in.(todo,in_progress,blocked)&"
+        f"priority_score=gte.{threshold}&"
+        f"order=priority_score.desc",
         headers=headers
     )
     
-    if r.status_code != 200:
-        return critical
+    if r.status_code == 200:
+        return r.json()
     
-    tasks = r.json()
-    
-    for task in tasks:
-        task_priority = task.get("metadata", {}).get("priority", 5)
-        project_id = task.get("project_id")
-        
-        # Get project priority
-        r2 = requests.get(
-            f"{SUPABASE_URL}/rest/v1/highlight_projects?id=eq.{project_id}",
-            headers=headers
-        )
-        
-        if r2.status_code == 200 and r2.json():
-            project_priority = r2.json()[0].get("metadata", {}).get("priority", 5)
-            avg = (task_priority + project_priority) / 2
-            
-            if avg > threshold:
-                critical.append({
-                    "task": task,
-                    "task_priority": task_priority,
-                    "project_priority": project_priority,
-                    "average": avg
-                })
-    
-    return critical
+    return []
+
+def create_project_with_priority(name, description, impact, urgency, strategic_value="supporting"):
+    """Create a project with impact and urgency."""
+    data = {
+        "name": name,
+        "description": description,
+        "status": "active",
+        "content_type": "project",
+        "impact": impact,
+        "urgency": urgency,
+        "strategic_value": strategic_value,
+        "metadata": {"owner": "kimi"},
+        "created_by": "kimi"
+    }
+    r = requests.post(
+        f"{SUPABASE_URL}/rest/v1/highlight_projects",
+        headers=headers,
+        json=data
+    )
+    return r.json()[0] if r.status_code == 201 else None
+
+def create_task_with_priority(project_id, description, impact, urgency, parent_feature_id=None):
+    """Create a task with impact and urgency."""
+    data = {
+        "project_id": project_id,
+        "event_type": "task",
+        "description": description,
+        "status": "todo",
+        "impact": impact,
+        "urgency": urgency,
+        "metadata": {
+            "assigned_to": "kimi",
+            "parent_feature_id": parent_feature_id
+        }
+    }
+    r = requests.post(
+        f"{SUPABASE_URL}/rest/v1/highlight_events",
+        headers=headers,
+        json=data
+    )
+    return r.json()[0] if r.status_code == 201 else None
 
 # Example usage
 if __name__ == "__main__":
-    # Create project
-    project = create_project("Gennial Growth", "Autonomía Kimi", priority=8)
-    
-    # Create feature
-    feature = create_feature(project["id"], "Skill Acquisition Engine", priority=8)
-    
-    # Create task
-    task = create_task(
-        project["id"],
-        feature["id"],
-        "Skill Acquisition Engine",
-        "Install marketing-drafter skill",
-        priority=8
+    # Create project with priority (impact × urgency)
+    # impact=4, urgency=5 → score=20 (high priority)
+    project = create_project_with_priority(
+        name="Gennial Growth",
+        description="Autonomía Kimi",
+        impact=4,
+        urgency=5,
+        strategic_value="supporting"
     )
     
-    print(f"Created: {task}")
+    # Create feature with priority
+    feature = create_task_with_priority(
+        project_id=project["id"],
+        description="Skill Acquisition Engine",
+        impact=4,
+        urgency=5
+    )
+    
+    # Create task with priority
+    # impact=4, urgency=5 → score=20 (will alert if ≥20)
+    task = create_task_with_priority(
+        project_id=project["id"],
+        description="Install marketing-drafter skill",
+        impact=4,
+        urgency=5,
+        parent_feature_id=feature["id"]
+    )
+    
+    print(f"Created task with score: {task['priority_score']}")
+    
+    # Get critical tasks (score ≥ 20)
+    critical = get_critical_tasks(threshold=20)
+    print(f"Critical tasks: {len(critical)}")
 ```
 
 ### Bash: Quick Queries
@@ -431,19 +525,97 @@ curl -s "$SUPABASE_URL/rest/v1/highlight_events?event_type=eq.task" \
 Kimi runs a heartbeat every 30 minutes that:
 
 1. **Checks project health** - Counts active projects
-2. **Finds critical tasks** - (Project Priority + Task Priority) / 2 > 8
-3. **Decides to alert** - Only if average priority > 8
-4. **Acts independently** - If Matias doesn't respond in 24h
+2. **Finds critical tasks** - priority_score ≥ 20 (or status = 'critical')
+3. **Decides to alert** - Only if score ≥ 20
+4. **Orders tasks** - By score desc, then strategic_value, then created_at
+5. **Acts independently** - If Matias doesn't respond in 24h
 
-### Alert Logic
+### Alert Logic (Impact × Urgency)
 
 ```python
-def should_alert(task, project):
-    task_priority = task.get("metadata", {}).get("priority", 5)
-    project_priority = project.get("metadata", {}).get("priority", 5)
-    average = (task_priority + project_priority) / 2
+def should_alert(task):
+    """Determine if Matias should be alerted."""
+    # Critical override
+    if task.get("status") == "critical":
+        return True, "Critical status override"
     
-    return average > 8  # Alert threshold
+    # Score-based alert (≥ 20)
+    task_score = task.get("priority_score", 0)
+    if task_score >= 20:
+        return True, f"Score {task_score} ≥ 20"
+    
+    return False, f"Score {task_score} < 20"
+
+def get_next_task():
+    """Get the next task to work on."""
+    headers = {"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}"}
+    
+    # Query with ordering by priority
+    url = f"{SUPABASE_URL}/rest/v1/highlight_events"
+    params = {
+        "event_type": "eq.task",
+        "status": "in.(todo,in_progress,blocked)",
+        "order": "priority_score.desc,created_at.asc",
+        "limit": 1
+    }
+    
+    r = requests.get(url, headers=headers, params=params)
+    if r.status_code == 200 and r.json():
+        return r.json()[0]
+    return None
+```
+
+### When Creating Tasks Without Context
+
+If Kimi doesn't have enough context to assign impact and urgency:
+
+```python
+def create_task_with_defaults(project_id, description):
+    """Create task with default priority values."""
+    data = {
+        "project_id": project_id,
+        "event_type": "task",
+        "description": description,
+        "status": "todo",
+        "impact": 2,  # Default: low-medium impact
+        "urgency": 2,  # Default: no immediate deadline
+        "metadata": {
+            "assigned_to": "kimi",
+            "note": "Defaults assigned by Kimi - insufficient context"
+        }
+    }
+    
+    # Log the assignment of defaults
+    log_activity(
+        action="task_created_with_defaults",
+        reasoning="Insufficient context to determine impact/urgency",
+        task_description=description
+    )
+    
+    return create_task(data)
+```
+
+### When Proposing Priority Changes
+
+If Kimi thinks a task has wrong priority (e.g., low impact but blocks external deliverable):
+
+```python
+def propose_priority_change(task_id, current, suggested, reasoning):
+    """Create proposal for priority change."""
+    proposal = {
+        "title": f"Priority adjustment for task {task_id}",
+        "description": f"""
+Current: impact={current['impact']}, urgency={current['urgency']}, score={current['score']}
+Suggested: impact={suggested['impact']}, urgency={suggested['urgency']}, score={suggested['impact'] * suggested['urgency']}
+
+Reasoning: {reasoning}
+        """,
+        "category": "other",
+        "proposed_by": "kimi"
+    }
+    
+    create_proposal(proposal)
+    # Do NOT modify task without human approval
 ```
 
 ### Autonomy Rules
@@ -488,14 +660,23 @@ GET /rest/v1/highlight_events?id=eq.{TASK_ID}
 ### Priority not calculated correctly
 
 **Check:**
-1. Project has `metadata.priority` as integer (1-10)
-2. Task has `metadata.priority` as integer (1-10)
-3. Both values are numbers, not strings
+1. Task/Project has `impact` as integer (1-5)
+2. Task/Project has `urgency` as integer (1-5)
+3. `priority_score` is computed automatically (impact × urgency)
+4. If `status = 'critical'`, score should be 25
 
 **Query to debug:**
 ```http
-GET /rest/v1/highlight_projects?id=eq.{PROJECT_ID}&select=metadata
-GET /rest/v1/highlight_events?id=eq.{TASK_ID}&select=metadata
+GET /rest/v1/highlight_events?id=eq.{TASK_ID}&select=impact,urgency,priority_score
+GET /rest/v1/highlight_projects?id=eq.{PROJECT_ID}&select=impact,urgency,strategic_value,priority_score
+```
+
+**Manual recalculation:**
+```sql
+-- Force recalculation of priority_score
+UPDATE highlight_events 
+SET impact = impact 
+WHERE id = 'task-uuid';
 ```
 
 ### Cannot link task to feature
