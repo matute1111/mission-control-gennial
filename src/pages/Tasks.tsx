@@ -170,7 +170,7 @@ export function Tasks({ tasks, features, projects, refresh }: Props) {
         </div>
       </Dialog>
 
-      <TaskDetailSheet task={selectedTask} onClose={() => setSelectedTask(null)} onUpdate={refresh} />
+      <TaskDetailSheet task={selectedTask} onClose={() => setSelectedTask(null)} />
     </div>
   )
 }
