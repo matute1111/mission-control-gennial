@@ -78,7 +78,7 @@ export default function App() {
         {page === "dashboard" && <Dashboard projects={projects} features={features} tasks={tasks} proposals={proposals} activities={activities} />}
         {page === "projects" && <Projects projects={projects} features={features} tasks={tasks} refresh={fetchAll} />}
         {page === "tasks" && <Tasks tasks={tasks} features={features} projects={projects} refresh={fetchAll} />}
-        {page === "proposals" && <Proposals proposals={proposals} projects={projects} features={features} refresh={fetchAll} />}
+        {page === "proposals" && <Proposals proposals={proposals} refresh={fetchAll} />}
         {page === "activity" && <ActivityLog activities={activities} />}
       </main>
     </div>
