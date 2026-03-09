@@ -7,6 +7,7 @@ import { Projects } from "@/pages/Projects"
 import { Tasks } from "@/pages/Tasks"
 import { Proposals } from "@/pages/Proposals"
 import { CRM } from "@/pages/CRM"
+import { Documents } from "@/pages/Documents"
 import { Backoffice } from "@/pages/Backoffice"
 import { ActivityLog } from "@/pages/ActivityLog"
 import type { Page, User, Project, Feature, Task, Proposal, Activity, CRMCompany, CRMContact, CRMDeal, CRMUpdate, CRMActivity } from "@/types"
@@ -100,6 +101,7 @@ export default function App() {
         {page === "tasks" && <Tasks tasks={tasks} features={features} projects={projects} refresh={fetchAll} />}
         {page === "proposals" && <Proposals proposals={proposals} refresh={fetchAll} />}
         {page === "crm" && <CRM companies={companies} contacts={contacts} deals={deals} updates={crmUpdates} activities={crmActivities} refresh={fetchAll} />}
+        {page === "documents" && <Documents />}
         {page === "backoffice" && <Backoffice currentUser={user} />}
         {page === "activity" && <ActivityLog activities={activities} />}
       </main>
