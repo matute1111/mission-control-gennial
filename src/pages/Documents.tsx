@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { supabase } from "@/lib/supabase"
 import { Button } from "@/components/Button"
 import { Input } from "@/components/Input"
 import { Card, CardContent } from "@/components/Card"
@@ -9,97 +10,12 @@ interface Document {
   id: string
   name: string
   filename: string
-  size: number
-  type: string
-  created_at: string
-  url: string
+  file_type: string
+  file_size: number
+  public_url: string
   category: string
+  created_at: string
 }
-
-// Documents hardcoded from Supabase Storage (public bucket)
-// TODO: Move to database table when migration is run
-const STATIC_DOCUMENTS: Document[] = [
-  {
-    id: "1",
-    name: "Mission Control Skill",
-    filename: "mission-control-skill.md",
-    size: 28626,
-    type: "markdown",
-    created_at: "2026-03-09T10:57:00Z",
-    url: "https://zyyebbeqofkhsanhwerk.supabase.co/storage/v1/object/public/documents/mission-control-skill.md",
-    category: "skills"
-  },
-  {
-    id: "2",
-    name: "SKILL.md",
-    filename: "SKILL.md",
-    size: 28626,
-    type: "markdown",
-    created_at: "2026-03-08T18:00:00Z",
-    url: "https://zyyebbeqofkhsanhwerk.supabase.co/storage/v1/object/public/documents/SKILL.md",
-    category: "skills"
-  },
-  {
-    id: "3",
-    name: "AGENTS.md",
-    filename: "AGENTS.md",
-    size: 7569,
-    type: "markdown",
-    created_at: "2026-03-08T18:00:00Z",
-    url: "https://zyyebbeqofkhsanhwerk.supabase.co/storage/v1/object/public/documents/AGENTS.md",
-    category: "docs"
-  },
-  {
-    id: "4",
-    name: "SOUL.md",
-    filename: "SOUL.md",
-    size: 9007,
-    type: "markdown",
-    created_at: "2026-03-08T18:00:00Z",
-    url: "https://zyyebbeqofkhsanhwerk.supabase.co/storage/v1/object/public/documents/SOUL.md",
-    category: "docs"
-  },
-  {
-    id: "5",
-    name: "Estado Completo CRM",
-    filename: "ESTADO_COMPLETO_CRM_LEARNINGS.md",
-    size: 6116,
-    type: "markdown",
-    created_at: "2026-03-08T18:00:00Z",
-    url: "https://zyyebbeqofkhsanhwerk.supabase.co/storage/v1/object/public/documents/ESTADO_COMPLETO_CRM_LEARNINGS.md",
-    category: "docs"
-  },
-  {
-    id: "6",
-    name: "Estrategia Outreach Escalable",
-    filename: "estrategia-outreach-escalable.md",
-    size: 5158,
-    type: "markdown",
-    created_at: "2026-03-08T18:00:00Z",
-    url: "https://zyyebbeqofkhsanhwerk.supabase.co/storage/v1/object/public/documents/estrategia-outreach-escalable.md",
-    category: "strategy"
-  },
-  {
-    id: "7",
-    name: "LinkedIn Growth Strategy v2",
-    filename: "linkedin-growth-strategy-v2.md",
-    size: 4689,
-    type: "markdown",
-    created_at: "2026-03-08T18:00:00Z",
-    url: "https://zyyebbeqofkhsanhwerk.supabase.co/storage/v1/object/public/documents/linkedin-growth-strategy-v2.md",
-    category: "strategy"
-  },
-  {
-    id: "8",
-    name: "LinkedIn Growth Strategy",
-    filename: "linkedin-growth-strategy.md",
-    size: 1807,
-    type: "markdown",
-    created_at: "2026-03-08T18:00:00Z",
-    url: "https://zyyebbeqofkhsanhwerk.supabase.co/storage/v1/object/public/documents/linkedin-growth-strategy.md",
-    category: "strategy"
-  }
-]
 
 export function Documents() {
   const [documents, setDocuments] = useState<Document[]>([])
@@ -107,12 +23,30 @@ export function Documents() {
   const [search, setSearch] = useState("")
 
   useEffect(() => {
-    // Simulate loading from API
-    setTimeout(() => {
-      setDocuments(STATIC_DOCUMENTS)
-      setLoading(false)
-    }, 500)
+    fetchDocuments()
   }, [])
+
+  const fetchDocuments = async () => {
+    setLoading(true)
+    try {
+      const { data, error } = await supabase
+        .from('documents')
+        .select('*')
+        .is('archived_at', null)
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        console.error('Error fetching documents:', error)
+        setLoading(false)
+        return
+      }
+
+      setDocuments(data || [])
+    } catch (e) {
+      console.error('Error:', e)
+    }
+    setLoading(false)
+  }
 
   const getFileIcon = (type: string) => {
     switch (type) {
@@ -163,7 +97,7 @@ export function Documents() {
 
   const filteredDocs = documents.filter(doc =>
     doc.name.toLowerCase().includes(search.toLowerCase()) ||
-    doc.category.toLowerCase().includes(search.toLowerCase())
+    (doc.category && doc.category.toLowerCase().includes(search.toLowerCase()))
   )
 
   return (
@@ -204,15 +138,15 @@ export function Documents() {
               <div key={doc.id} className="px-5 py-4 flex items-center justify-between hover:bg-stone-50 transition">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-stone-100 rounded-lg flex items-center justify-center">
-                    {getFileIcon(doc.type)}
+                    {getFileIcon(doc.file_type)}
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="font-medium text-stone-900">{doc.name}</span>
-                      <Badge value={doc.category} />
+                      {doc.category && <Badge value={doc.category} />}
                     </div>
                     <div className="text-sm text-stone-500">
-                      {formatFileSize(doc.size)} • {formatDate(doc.created_at)}
+                      {formatFileSize(doc.file_size)} • {formatDate(doc.created_at)}
                     </div>
                   </div>
                 </div>
@@ -220,7 +154,7 @@ export function Documents() {
                   <Button 
                     variant="ghost" 
                     size="sm"
-                    onClick={() => downloadFile(doc.url, doc.filename)}
+                    onClick={() => downloadFile(doc.public_url, doc.filename)}
                     className="text-stone-400 hover:text-stone-700"
                     title="Descargar"
                   >
@@ -235,8 +169,8 @@ export function Documents() {
 
       {/* Instructions */}
       <div className="text-sm text-stone-500 bg-stone-50 p-4 rounded-lg">
-        <strong>Nota:</strong> Para agregar más documentos, contactá a Kimi o subí los archivos directamente al bucket 
-        <code className="bg-stone-200 px-1 rounded">documents</code> en Supabase Storage.
+        <strong>Nota:</strong> Los documentos se leen automáticamente de la base de datos. 
+        Para agregar más archivos, subilos a Supabase Storage y agregá el registro en la tabla <code className="bg-stone-200 px-1 rounded">documents</code>.
       </div>
     </div>
   )
