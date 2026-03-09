@@ -4,6 +4,7 @@ import { Button } from "@/components/Button"
 import { Input } from "@/components/Input"
 import { Dialog, DialogTitle } from "@/components/Dialog"
 import { Badge } from "@/components/Badge"
+import { CompanyDetailSheet } from "@/components/CompanyDetailSheet"
 import { Building2, Users, DollarSign, Plus, Search, Globe, MapPin } from "lucide-react"
 import type { CRMCompany, CRMContact, CRMDeal, CRMUpdate, CRMActivity } from "@/types"
 import { getPriorityScore, STATUS_COLORS } from "@/types"
@@ -23,6 +24,7 @@ export function CRM({ companies, contacts, deals, updates, activities, refresh }
   const [search, setSearch] = useState("")
   const [showNewCompany, setShowNewCompany] = useState(false)
   const [newCompany, setNewCompany] = useState({ name: "", website: "", industry: "", location: "", country: "" })
+  const [selectedCompany, setSelectedCompany] = useState<CRMCompany | null>(null)
 
   const filteredCompanies = companies.filter(c => 
     c.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -219,7 +221,7 @@ export function CRM({ companies, contacts, deals, updates, activities, refresh }
             const companyDeals = getCompanyDeals(company.id)
             const score = getPriorityScore(company.impact, company.urgency)
             return (
-              <Card key={company.id}>
+              <Card key={company.id} className="cursor-pointer hover:border-amber-300 transition" onClick={() => setSelectedCompany(company)}>
                 <CardContent>
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
@@ -316,6 +318,12 @@ export function CRM({ companies, contacts, deals, updates, activities, refresh }
           )}
         </div>
       )}
+
+      <CompanyDetailSheet
+        company={selectedCompany}
+        onClose={() => setSelectedCompany(null)}
+        onUpdate={refresh}
+      />
     </div>
   )
 }
