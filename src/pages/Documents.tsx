@@ -3,88 +3,116 @@ import { Button } from "@/components/Button"
 import { Input } from "@/components/Input"
 import { Card, CardContent } from "@/components/Card"
 import { Badge } from "@/components/Badge"
-import { Dialog, DialogTitle } from "@/components/Dialog"
-import { FileText, Download, Upload, Trash2, Search, FileCode, BookOpen, File } from "lucide-react"
+import { FileText, Download, Search, FileCode, BookOpen, File } from "lucide-react"
 
 interface Document {
   id: string
   name: string
+  filename: string
   size: number
   type: string
   created_at: string
   url: string
+  category: string
 }
 
-// Use public Supabase Storage URL (no auth needed for public buckets)
-const SUPABASE_URL = "https://zyyebbeqofkhsanhwerk.supabase.co"
-const BUCKET_NAME = "documents"
+// Documents hardcoded from Supabase Storage (public bucket)
+// TODO: Move to database table when migration is run
+const STATIC_DOCUMENTS: Document[] = [
+  {
+    id: "1",
+    name: "Mission Control Skill",
+    filename: "mission-control-skill.md",
+    size: 28626,
+    type: "markdown",
+    created_at: "2026-03-09T10:57:00Z",
+    url: "https://zyyebbeqofkhsanhwerk.supabase.co/storage/v1/object/public/documents/mission-control-skill.md",
+    category: "skills"
+  },
+  {
+    id: "2",
+    name: "SKILL.md",
+    filename: "SKILL.md",
+    size: 28626,
+    type: "markdown",
+    created_at: "2026-03-08T18:00:00Z",
+    url: "https://zyyebbeqofkhsanhwerk.supabase.co/storage/v1/object/public/documents/SKILL.md",
+    category: "skills"
+  },
+  {
+    id: "3",
+    name: "AGENTS.md",
+    filename: "AGENTS.md",
+    size: 7569,
+    type: "markdown",
+    created_at: "2026-03-08T18:00:00Z",
+    url: "https://zyyebbeqofkhsanhwerk.supabase.co/storage/v1/object/public/documents/AGENTS.md",
+    category: "docs"
+  },
+  {
+    id: "4",
+    name: "SOUL.md",
+    filename: "SOUL.md",
+    size: 9007,
+    type: "markdown",
+    created_at: "2026-03-08T18:00:00Z",
+    url: "https://zyyebbeqofkhsanhwerk.supabase.co/storage/v1/object/public/documents/SOUL.md",
+    category: "docs"
+  },
+  {
+    id: "5",
+    name: "Estado Completo CRM",
+    filename: "ESTADO_COMPLETO_CRM_LEARNINGS.md",
+    size: 6116,
+    type: "markdown",
+    created_at: "2026-03-08T18:00:00Z",
+    url: "https://zyyebbeqofkhsanhwerk.supabase.co/storage/v1/object/public/documents/ESTADO_COMPLETO_CRM_LEARNINGS.md",
+    category: "docs"
+  },
+  {
+    id: "6",
+    name: "Estrategia Outreach Escalable",
+    filename: "estrategia-outreach-escalable.md",
+    size: 5158,
+    type: "markdown",
+    created_at: "2026-03-08T18:00:00Z",
+    url: "https://zyyebbeqofkhsanhwerk.supabase.co/storage/v1/object/public/documents/estrategia-outreach-escalable.md",
+    category: "strategy"
+  },
+  {
+    id: "7",
+    name: "LinkedIn Growth Strategy v2",
+    filename: "linkedin-growth-strategy-v2.md",
+    size: 4689,
+    type: "markdown",
+    created_at: "2026-03-08T18:00:00Z",
+    url: "https://zyyebbeqofkhsanhwerk.supabase.co/storage/v1/object/public/documents/linkedin-growth-strategy-v2.md",
+    category: "strategy"
+  },
+  {
+    id: "8",
+    name: "LinkedIn Growth Strategy",
+    filename: "linkedin-growth-strategy.md",
+    size: 1807,
+    type: "markdown",
+    created_at: "2026-03-08T18:00:00Z",
+    url: "https://zyyebbeqofkhsanhwerk.supabase.co/storage/v1/object/public/documents/linkedin-growth-strategy.md",
+    category: "strategy"
+  }
+]
 
 export function Documents() {
   const [documents, setDocuments] = useState<Document[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
-  const [showUpload, setShowUpload] = useState(false)
-  const [uploading, setUploading] = useState(false)
-  const [selectedFile, setSelectedFile] = useState<File | null>(null)
 
   useEffect(() => {
-    fetchDocuments()
+    // Simulate loading from API
+    setTimeout(() => {
+      setDocuments(STATIC_DOCUMENTS)
+      setLoading(false)
+    }, 500)
   }, [])
-
-  const fetchDocuments = async () => {
-    setLoading(true)
-    try {
-      // List files using public API (no auth needed for public buckets)
-      const response = await fetch(`${SUPABASE_URL}/storage/v1/object/list/${BUCKET_NAME}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prefix: '', limit: 100 })
-      })
-
-      if (!response.ok) {
-        console.error('Error fetching documents:', response.status, await response.text())
-        setLoading(false)
-        return
-      }
-
-      const files = await response.json()
-      console.log('Files from bucket:', files)
-
-      // Get public URLs for each file
-      const docs: Document[] = files
-        .filter((file: any) => file.name && !file.name.endsWith('/'))
-        .map((file: any) => ({
-          id: file.id,
-          name: file.name,
-          size: file.metadata?.size || 0,
-          type: getFileType(file.name),
-          created_at: file.created_at || new Date().toISOString(),
-          url: `${SUPABASE_URL}/storage/v1/object/public/${BUCKET_NAME}/${file.name}`
-        }))
-
-      setDocuments(docs)
-    } catch (e) {
-      console.error('Error:', e)
-    }
-    setLoading(false)
-  }
-
-  const getFileType = (filename: string): string => {
-    const ext = filename.split('.').pop()?.toLowerCase()
-    switch (ext) {
-      case 'md': return 'markdown'
-      case 'txt': return 'text'
-      case 'json': return 'json'
-      case 'sql': return 'sql'
-      case 'yaml':
-      case 'yml': return 'yaml'
-      case 'py': return 'python'
-      case 'js':
-      case 'ts':
-      case 'tsx': return 'code'
-      default: return 'file'
-    }
-  }
 
   const getFileIcon = (type: string) => {
     switch (type) {
@@ -111,40 +139,14 @@ export function Documents() {
     return new Date(dateStr).toLocaleDateString('es-AR', {
       day: '2-digit',
       month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+      year: 'numeric'
     })
-  }
-
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setSelectedFile(e.target.files[0])
-    }
-  }
-
-  const uploadFile = async () => {
-    if (!selectedFile) return
-
-    setUploading(true)
-    try {
-      // Upload using direct fetch (requires service role key - should be done server-side)
-      alert('Upload requiere configuración adicional. Por ahora usá el panel de Supabase.')
-      setShowUpload(false)
-      setSelectedFile(null)
-    } catch (e) {
-      console.error('Error:', e)
-    }
-    setUploading(false)
   }
 
   const downloadFile = async (url: string, filename: string) => {
     try {
-      // Fetch the file content first (to handle CORS)
       const response = await fetch(url)
       const blob = await response.blob()
-      
-      // Create a blob URL and download
       const blobUrl = window.URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = blobUrl
@@ -152,24 +154,16 @@ export function Documents() {
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
-      
-      // Clean up
       window.URL.revokeObjectURL(blobUrl)
     } catch (e) {
       console.error('Download error:', e)
-      // Fallback: open in new tab
       window.open(url, '_blank')
     }
   }
 
-  const deleteFile = async (filename: string) => {
-    if (!confirm(`¿Eliminar ${filename}?`)) return
-
-    alert('Delete requiere configuración adicional. Por ahora usá el panel de Supabase.')
-  }
-
   const filteredDocs = documents.filter(doc =>
-    doc.name.toLowerCase().includes(search.toLowerCase())
+    doc.name.toLowerCase().includes(search.toLowerCase()) ||
+    doc.category.toLowerCase().includes(search.toLowerCase())
   )
 
   return (
@@ -179,10 +173,9 @@ export function Documents() {
           <h1 className="text-2xl font-semibold text-stone-900">Documentos</h1>
           <p className="text-stone-500 text-sm mt-1">Skills, guías y recursos descargables</p>
         </div>
-        <Button onClick={() => setShowUpload(true)} className="bg-amber-500 hover:bg-amber-600 text-white">
-          <Upload className="w-4 h-4 mr-2" />
-          Subir Documento
-        </Button>
+        <div className="text-sm text-stone-500">
+          {documents.length} archivos disponibles
+        </div>
       </div>
 
       {/* Search */}
@@ -205,7 +198,6 @@ export function Documents() {
             <div className="px-5 py-12 text-center text-stone-500">
               <FileText className="w-12 h-12 mx-auto mb-4 text-stone-300" />
               <p>No hay documentos</p>
-              <p className="text-sm text-stone-400 mt-1">Subí tu primer archivo</p>
             </div>
           ) : (
             filteredDocs.map(doc => (
@@ -217,7 +209,7 @@ export function Documents() {
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="font-medium text-stone-900">{doc.name}</span>
-                      <Badge value={doc.type} />
+                      <Badge value={doc.category} />
                     </div>
                     <div className="text-sm text-stone-500">
                       {formatFileSize(doc.size)} • {formatDate(doc.created_at)}
@@ -228,20 +220,11 @@ export function Documents() {
                   <Button 
                     variant="ghost" 
                     size="sm"
-                    onClick={() => downloadFile(doc.url, doc.name)}
+                    onClick={() => downloadFile(doc.url, doc.filename)}
                     className="text-stone-400 hover:text-stone-700"
                     title="Descargar"
                   >
                     <Download className="w-4 h-4" />
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={() => deleteFile(doc.name)}
-                    className="text-stone-400 hover:text-red-600"
-                    title="Eliminar"
-                  >
-                    <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>
               </div>
@@ -250,50 +233,11 @@ export function Documents() {
         </div>
       </Card>
 
-      {/* Upload Dialog */}
-      <Dialog open={showUpload} onClose={() => { setShowUpload(false); setSelectedFile(null); }}>
-        <DialogTitle>Subir Documento</DialogTitle>
-        <div className="space-y-4">
-          <div className="border-2 border-dashed border-stone-200 rounded-lg p-8 text-center hover:border-amber-300 transition">
-            <input
-              type="file"
-              onChange={handleFileSelect}
-              className="hidden"
-              id="file-upload"
-              accept=".md,.txt,.json,.sql,.yaml,.yml,.py,.js,.ts,.tsx"
-            />
-            <label htmlFor="file-upload" className="cursor-pointer">
-              <Upload className="w-8 h-8 mx-auto mb-3 text-stone-400" />
-              <p className="text-sm text-stone-600">
-                {selectedFile ? selectedFile.name : 'Arrastrá un archivo o hacé click para seleccionar'}
-              </p>
-              <p className="text-xs text-stone-400 mt-1">
-                MD, TXT, JSON, SQL, YAML, PY, JS, TS
-              </p>
-            </label>
-          </div>
-          
-          {selectedFile && (
-            <div className="text-sm text-stone-600 bg-stone-50 p-3 rounded">
-              <strong>Archivo:</strong> {selectedFile.name}<br />
-              <strong>Tamaño:</strong> {formatFileSize(selectedFile.size)}
-            </div>
-          )}
-          
-          <div className="flex gap-2 justify-end">
-            <Button variant="ghost" onClick={() => { setShowUpload(false); setSelectedFile(null); }}>
-              Cancelar
-            </Button>
-            <Button 
-              onClick={uploadFile}
-              disabled={!selectedFile || uploading}
-              className="bg-amber-500 hover:bg-amber-600 text-white"
-            >
-              {uploading ? 'Subiendo...' : 'Subir'}
-            </Button>
-          </div>
-        </div>
-      </Dialog>
+      {/* Instructions */}
+      <div className="text-sm text-stone-500 bg-stone-50 p-4 rounded-lg">
+        <strong>Nota:</strong> Para agregar más documentos, contactá a Kimi o subí los archivos directamente al bucket 
+        <code className="bg-stone-200 px-1 rounded">documents</code> en Supabase Storage.
+      </div>
     </div>
   )
 }
