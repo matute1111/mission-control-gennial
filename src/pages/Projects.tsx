@@ -8,6 +8,7 @@ import { Input } from "@/components/Input"
 import { Textarea } from "@/components/Textarea"
 import { Select } from "@/components/Select"
 import { ProjectDetailSheet } from "@/components/ProjectDetailSheet"
+import { FeatureDetailSheet } from "@/components/FeatureDetailSheet"
 import { cn, ago } from "@/lib/utils"
 import type { Project, Feature, Task, ProjectUpdate } from "@/types"
 import { Plus, Activity, Folder, FolderOpen, ChevronRight, Target } from "lucide-react"
@@ -28,6 +29,7 @@ export function Projects({ projects, features, tasks, refresh }: Props) {
   const [urgency, setUrgency] = useState(3)
   const [strategicValue, setStrategicValue] = useState<'core' | 'supporting' | 'experimental'>('supporting')
   const [selectedProject, setSelectedProject] = useState<Project | null>(null)
+  const [selectedFeature, setSelectedFeature] = useState<Feature | null>(null)
   const [latestUpdates, setLatestUpdates] = useState<Record<string, ProjectUpdate>>({})
   const [expandedMacros, setExpandedMacros] = useState<Set<string>>(new Set())
 
@@ -262,6 +264,7 @@ export function Projects({ projects, features, tasks, refresh }: Props) {
                       <div 
                         key={feature.id}
                         className="px-5 py-3 pl-16 hover:bg-stone-50 transition cursor-pointer border-l-4 border-transparent hover:border-amber-300"
+                        onClick={() => setSelectedFeature(feature)}
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
@@ -358,6 +361,14 @@ export function Projects({ projects, features, tasks, refresh }: Props) {
         features={features}
         tasks={tasks}
         onClose={() => setSelectedProject(null)}
+        onUpdate={refresh}
+      />
+
+      <FeatureDetailSheet
+        feature={selectedFeature}
+        project={selectedFeature ? projects.find(p => p.id === selectedFeature.project_id) || null : null}
+        tasks={tasks}
+        onClose={() => setSelectedFeature(null)}
         onUpdate={refresh}
       />
     </div>
