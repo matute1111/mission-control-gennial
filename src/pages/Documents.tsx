@@ -155,14 +155,28 @@ export function Documents() {
     setUploading(false)
   }
 
-  const downloadFile = (url: string, filename: string) => {
-    const link = document.createElement('a')
-    link.href = url
-    link.download = filename
-    link.target = '_blank'
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
+  const downloadFile = async (url: string, filename: string) => {
+    try {
+      // Fetch the file content first (to handle CORS)
+      const response = await fetch(url)
+      const blob = await response.blob()
+      
+      // Create a blob URL and download
+      const blobUrl = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = blobUrl
+      link.download = filename
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      
+      // Clean up
+      window.URL.revokeObjectURL(blobUrl)
+    } catch (e) {
+      console.error('Download error:', e)
+      // Fallback: open in new tab
+      window.open(url, '_blank')
+    }
   }
 
   const deleteFile = async (filename: string) => {
