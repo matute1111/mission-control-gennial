@@ -46,10 +46,12 @@ export function Documents() {
         setLoading(false)
         return
       }
+      
+      console.log('Files from bucket:', files)
 
       // Get public URLs for each file
       const docs: Document[] = files
-        .filter(file => !file.id.endsWith('/')) // Filter out folders
+        .filter(file => file.name && !file.name.endsWith('/')) // Filter out folders
         .map(file => {
           const { data: { publicUrl } } = supabase
             .storage
