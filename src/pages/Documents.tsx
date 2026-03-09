@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react"
-import { supabase } from "@/lib/supabase"
 import { Button } from "@/components/Button"
 import { Input } from "@/components/Input"
 import { Card, CardContent } from "@/components/Card"
@@ -16,6 +15,10 @@ interface Document {
   url: string
 }
 
+// Use public Supabase Storage URL (no auth needed for public buckets)
+const SUPABASE_URL = "https://zyyebbeqofkhsanhwerk.supabase.co"
+const BUCKET_NAME = "documents"
+
 export function Documents() {
   const [documents, setDocuments] = useState<Document[]>([])
   const [loading, setLoading] = useState(true)
@@ -24,8 +27,6 @@ export function Documents() {
   const [uploading, setUploading] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
 
-  const BUCKET_NAME = "documents"
-
   useEffect(() => {
     fetchDocuments()
   }, [])
@@ -33,40 +34,33 @@ export function Documents() {
   const fetchDocuments = async () => {
     setLoading(true)
     try {
-      // List files from bucket
-      const { data: files, error } = await supabase
-        .storage
-        .from(BUCKET_NAME)
-        .list('', {
-          sortBy: { column: 'created_at', order: 'desc' }
-        })
+      // List files using public API (no auth needed for public buckets)
+      const response = await fetch(`${SUPABASE_URL}/storage/v1/object/list/${BUCKET_NAME}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prefix: '', limit: 100 })
+      })
 
-      if (error) {
-        console.error('Error fetching documents:', error)
+      if (!response.ok) {
+        console.error('Error fetching documents:', response.status, await response.text())
         setLoading(false)
         return
       }
-      
+
+      const files = await response.json()
       console.log('Files from bucket:', files)
 
       // Get public URLs for each file
       const docs: Document[] = files
-        .filter(file => file.name && !file.name.endsWith('/')) // Filter out folders
-        .map(file => {
-          const { data: { publicUrl } } = supabase
-            .storage
-            .from(BUCKET_NAME)
-            .getPublicUrl(file.name)
-          
-          return {
-            id: file.id,
-            name: file.name,
-            size: file.metadata?.size || 0,
-            type: getFileType(file.name),
-            created_at: file.created_at || new Date().toISOString(),
-            url: publicUrl
-          }
-        })
+        .filter((file: any) => file.name && !file.name.endsWith('/'))
+        .map((file: any) => ({
+          id: file.id,
+          name: file.name,
+          size: file.metadata?.size || 0,
+          type: getFileType(file.name),
+          created_at: file.created_at || new Date().toISOString(),
+          url: `${SUPABASE_URL}/storage/v1/object/public/${BUCKET_NAME}/${file.name}`
+        }))
 
       setDocuments(docs)
     } catch (e) {
@@ -134,21 +128,10 @@ export function Documents() {
 
     setUploading(true)
     try {
-      const { error } = await supabase
-        .storage
-        .from(BUCKET_NAME)
-        .upload(selectedFile.name, selectedFile, {
-          upsert: true
-        })
-
-      if (error) {
-        console.error('Upload error:', error)
-        alert('Error al subir: ' + error.message)
-      } else {
-        setShowUpload(false)
-        setSelectedFile(null)
-        fetchDocuments()
-      }
+      // Upload using direct fetch (requires service role key - should be done server-side)
+      alert('Upload requiere configuración adicional. Por ahora usá el panel de Supabase.')
+      setShowUpload(false)
+      setSelectedFile(null)
     } catch (e) {
       console.error('Error:', e)
     }
@@ -182,21 +165,7 @@ export function Documents() {
   const deleteFile = async (filename: string) => {
     if (!confirm(`¿Eliminar ${filename}?`)) return
 
-    try {
-      const { error } = await supabase
-        .storage
-        .from(BUCKET_NAME)
-        .remove([filename])
-
-      if (error) {
-        console.error('Delete error:', error)
-        alert('Error al eliminar: ' + error.message)
-      } else {
-        fetchDocuments()
-      }
-    } catch (e) {
-      console.error('Error:', e)
-    }
+    alert('Delete requiere configuración adicional. Por ahora usá el panel de Supabase.')
   }
 
   const filteredDocs = documents.filter(doc =>
