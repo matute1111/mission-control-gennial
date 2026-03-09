@@ -5,7 +5,7 @@ import { Input } from "@/components/Input"
 import { Dialog, DialogTitle } from "@/components/Dialog"
 import { Badge } from "@/components/Badge"
 import { CompanyDetailSheet } from "@/components/CompanyDetailSheet"
-import { Building2, Users, DollarSign, Plus, Search, Globe, MapPin } from "lucide-react"
+import { Building2, Users, DollarSign, Plus, Search, Globe, MapPin, Briefcase } from "lucide-react"
 import type { CRMCompany, CRMContact, CRMDeal, CRMUpdate, CRMActivity } from "@/types"
 import { getPriorityScore, STATUS_COLORS } from "@/types"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/Card"
@@ -137,7 +137,7 @@ export function CRM({ companies, contacts, deals, updates, activities, refresh }
       </Dialog>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className={`grid gap-4 ${wonDealsValue > 0 ? 'grid-cols-2 md:grid-cols-5' : 'grid-cols-2 md:grid-cols-4'}`}>
         <Card>
           <CardContent>
             <div className="flex items-center gap-2 text-stone-500 text-sm mb-1">
@@ -159,21 +159,34 @@ export function CRM({ companies, contacts, deals, updates, activities, refresh }
         <Card>
           <CardContent>
             <div className="flex items-center gap-2 text-stone-500 text-sm mb-1">
-              <DollarSign className="w-4 h-4" />
-              Pipeline
+              <Briefcase className="w-4 h-4" />
+              Deals Activos
             </div>
-            <div className="text-2xl font-semibold text-stone-900">${(totalPipelineValue / 1000).toFixed(0)}k</div>
+            <div className="text-2xl font-semibold text-stone-900">
+              {deals.filter(d => d.stage !== 'won' && d.stage !== 'lost' && d.stage !== 'archived').length}
+            </div>
           </CardContent>
         </Card>
         <Card>
           <CardContent>
             <div className="flex items-center gap-2 text-stone-500 text-sm mb-1">
               <DollarSign className="w-4 h-4" />
-              Ganado
+              Pipeline
             </div>
-            <div className="text-2xl font-semibold text-emerald-600">${(wonDealsValue / 1000).toFixed(0)}k</div>
+            <div className="text-2xl font-semibold text-stone-900">${(totalPipelineValue / 1000).toFixed(0)}k</div>
           </CardContent>
         </Card>
+        {wonDealsValue > 0 && (
+          <Card>
+            <CardContent>
+              <div className="flex items-center gap-2 text-stone-500 text-sm mb-1">
+                <DollarSign className="w-4 h-4" />
+                Ganado
+              </div>
+              <div className="text-2xl font-semibold text-emerald-600">${(wonDealsValue / 1000).toFixed(0)}k</div>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Search */}
