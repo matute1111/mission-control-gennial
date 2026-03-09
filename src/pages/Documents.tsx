@@ -145,8 +145,10 @@ export function Documents() {
                       <span className="font-medium text-stone-900">{doc.name}</span>
                       {doc.category && <Badge value={doc.category} />}
                     </div>
-                    <div className="text-sm text-stone-500">
-                      {formatFileSize(doc.file_size)} • {formatDate(doc.created_at)}
+                    <div className="text-sm text-stone-500 flex items-center gap-3">
+                      <span>{formatFileSize(doc.file_size)}</span>
+                      <span className="text-stone-300">|</span>
+                      <span className="text-stone-400">Subido: {formatDate(doc.created_at)}</span>
                     </div>
                   </div>
                 </div>
