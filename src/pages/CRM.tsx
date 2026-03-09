@@ -38,13 +38,29 @@ export function CRM({ companies, contacts, deals, updates, activities, refresh }
 
   const createCompany = async () => {
     const { data: { user } } = await supabase.auth.getUser()
-    await supabase.from("crm_companies").insert({
-      ...newCompany,
-      status: "prospect",
-      created_by: user?.email || "unknown"
-    })
+    const { data, error } = await supabase
+      .from("crm_companies")
+      .insert({
+        ...newCompany,
+        status: "prospect",
+        created_by: user?.email || "unknown"
+      })
+      .select()
+      .single()
+    
+    if (error) {
+      console.error('Error creating company:', error)
+      return
+    }
+    
     setShowNewCompany(false)
     setNewCompany({ name: "", website: "", industry: "", location: "", country: "" })
+    
+    // Abrir el sheet de la nueva empresa para agregar contactos, deals, etc.
+    if (data) {
+      setSelectedCompany(data)
+    }
+    
     refresh()
   }
 
@@ -100,6 +116,9 @@ export function CRM({ companies, contacts, deals, updates, activities, refresh }
       {/* Dialog para nueva empresa */}
       <Dialog open={showNewCompany} onClose={() => setShowNewCompany(false)}>
         <DialogTitle>Agregar Empresa</DialogTitle>
+        <p className="text-sm text-stone-500 mb-3">
+          Creá la empresa y se abrirá el panel para agregar contactos, deals y notas.
+        </p>
         <div className="space-y-3">
           <Input 
             placeholder="Nombre *" 
