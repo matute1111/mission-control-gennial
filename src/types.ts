@@ -1,10 +1,17 @@
-export type Page = "dashboard" | "projects" | "tasks" | "proposals" | "crm" | "activity"
+export type Page = "dashboard" | "projects" | "tasks" | "proposals" | "crm" | "backoffice" | "activity"
 
-export type User = {
+export interface User {
+  id?: string
   email: string
   name: string
-  role: string
-} | null
+  role: 'admin' | 'user' | 'viewer'
+  status?: 'active' | 'inactive' | 'suspended'
+  avatar_url?: string
+  department?: string
+  phone?: string
+  last_login_at?: string
+  created_at?: string
+}
 
 // Nuevo schema: 12 tablas, hierarchy projects → features → tasks
 
@@ -210,8 +217,9 @@ export interface Activity {
   archived_at?: string | null
 }
 
-// Auth users
-export const USERS: Record<string, { name: string; role: string; pass: string }> = {
+// Auth users - Now managed in org_users table via Supabase
+// Legacy hardcoded users kept for reference during migration
+export const LEGACY_USERS: Record<string, { name: string; role: string; pass: string }> = {
   "matias@gennial.ai": { name: "Matias", role: "Chief AI Officer", pass: "gennial2026" },
   "adrian@gennial.ai": { name: "Adrian", role: "CEO", pass: "gennial2026" },
 }

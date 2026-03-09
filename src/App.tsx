@@ -7,11 +7,12 @@ import { Projects } from "@/pages/Projects"
 import { Tasks } from "@/pages/Tasks"
 import { Proposals } from "@/pages/Proposals"
 import { CRM } from "@/pages/CRM"
+import { Backoffice } from "@/pages/Backoffice"
 import { ActivityLog } from "@/pages/ActivityLog"
 import type { Page, User, Project, Feature, Task, Proposal, Activity, CRMCompany, CRMContact, CRMDeal, CRMUpdate, CRMActivity } from "@/types"
 
 export default function App() {
-  const [user, setUser] = useState<User>(() => {
+  const [user, setUser] = useState<User | null>(() => {
     const s = sessionStorage.getItem("mc_user")
     return s ? JSON.parse(s) : null
   })
@@ -64,7 +65,8 @@ export default function App() {
     sessionStorage.setItem("mc_user", JSON.stringify(u))
   }
 
-  const logout = () => {
+  const logout = async () => {
+    await supabase.auth.signOut()
     setUser(null)
     sessionStorage.removeItem("mc_user")
   }
@@ -98,6 +100,7 @@ export default function App() {
         {page === "tasks" && <Tasks tasks={tasks} features={features} projects={projects} refresh={fetchAll} />}
         {page === "proposals" && <Proposals proposals={proposals} refresh={fetchAll} />}
         {page === "crm" && <CRM companies={companies} contacts={contacts} deals={deals} updates={crmUpdates} activities={crmActivities} refresh={fetchAll} />}
+        {page === "backoffice" && <Backoffice currentUser={user} />}
         {page === "activity" && <ActivityLog activities={activities} />}
       </main>
     </div>

@@ -1,27 +1,38 @@
 import { cn } from "@/lib/utils"
 import type { Page, User } from "@/types"
-import { LayoutDashboard, FolderKanban, CheckSquare, MessageCircle, Activity, LogOut, Menu, X, Bot, Mail, Linkedin, Github, Briefcase } from "lucide-react"
+import { LayoutDashboard, FolderKanban, CheckSquare, MessageCircle, Activity, LogOut, Menu, X, Bot, Mail, Linkedin, Github, Briefcase, Shield } from "lucide-react"
 import { useState } from "react"
 
 interface SidebarProps {
   page: Page
   setPage: (p: Page) => void
-  user: User
+  user: User | null
   counts: { projects: number; tasks: number; proposals: number; crm?: number }
   onLogout: () => void
 }
 
-const NAV: { key: Page; label: string; icon: typeof LayoutDashboard }[] = [
-  { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { key: "projects", label: "Proyectos", icon: FolderKanban },
-  { key: "tasks", label: "Tareas", icon: CheckSquare },
-  { key: "proposals", label: "Proposals", icon: MessageCircle },
-  { key: "crm", label: "CRM", icon: Briefcase },
-  { key: "activity", label: "Actividad", icon: Activity },
-]
+const getNavItems = (isAdmin: boolean): { key: Page; label: string; icon: typeof LayoutDashboard }[] => {
+  const items = [
+    { key: "dashboard" as Page, label: "Dashboard", icon: LayoutDashboard },
+    { key: "projects" as Page, label: "Proyectos", icon: FolderKanban },
+    { key: "tasks" as Page, label: "Tareas", icon: CheckSquare },
+    { key: "proposals" as Page, label: "Proposals", icon: MessageCircle },
+    { key: "crm" as Page, label: "CRM", icon: Briefcase },
+    { key: "activity" as Page, label: "Actividad", icon: Activity },
+  ]
+  
+  if (isAdmin) {
+    items.push({ key: "backoffice" as Page, label: "Backoffice", icon: Shield })
+  }
+  
+  return items
+}
 
 export function Sidebar({ page, setPage, user, counts, onLogout }: SidebarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const isAdmin = user?.role === 'admin'
+  const NAV = getNavItems(isAdmin)
+  
   const countMap: Partial<Record<Page, { n: number; alert?: boolean }>> = {
     projects: { n: counts.projects },
     tasks: { n: counts.tasks },
