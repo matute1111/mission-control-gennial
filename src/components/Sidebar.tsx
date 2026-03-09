@@ -1,13 +1,13 @@
 import { cn } from "@/lib/utils"
 import type { Page, User } from "@/types"
-import { LayoutDashboard, FolderKanban, CheckSquare, MessageCircle, Activity, LogOut, Menu, X, Bot, Mail, Linkedin, Github, Database, Cloud, Code, Wrench } from "lucide-react"
+import { LayoutDashboard, FolderKanban, CheckSquare, MessageCircle, Activity, LogOut, Menu, X, Bot, Mail, Linkedin, Github, Briefcase } from "lucide-react"
 import { useState } from "react"
 
 interface SidebarProps {
   page: Page
   setPage: (p: Page) => void
   user: User
-  counts: { projects: number; tasks: number; proposals: number }
+  counts: { projects: number; tasks: number; proposals: number; crm?: number }
   onLogout: () => void
 }
 
@@ -16,6 +16,7 @@ const NAV: { key: Page; label: string; icon: typeof LayoutDashboard }[] = [
   { key: "projects", label: "Proyectos", icon: FolderKanban },
   { key: "tasks", label: "Tareas", icon: CheckSquare },
   { key: "proposals", label: "Proposals", icon: MessageCircle },
+  { key: "crm", label: "CRM", icon: Briefcase },
   { key: "activity", label: "Actividad", icon: Activity },
 ]
 
@@ -25,6 +26,7 @@ export function Sidebar({ page, setPage, user, counts, onLogout }: SidebarProps)
     projects: { n: counts.projects },
     tasks: { n: counts.tasks },
     proposals: { n: counts.proposals, alert: counts.proposals > 0 },
+    crm: { n: counts.crm || 0, alert: (counts.crm || 0) > 0 },
   }
 
   // Mobile bottom navigation

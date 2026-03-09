@@ -1,4 +1,4 @@
-export type Page = "dashboard" | "projects" | "tasks" | "proposals" | "activity"
+export type Page = "dashboard" | "projects" | "tasks" | "proposals" | "crm" | "activity"
 
 export type User = {
   email: string
@@ -214,6 +214,139 @@ export interface Activity {
 export const USERS: Record<string, { name: string; role: string; pass: string }> = {
   "matias@gennial.ai": { name: "Matias", role: "Chief AI Officer", pass: "gennial2026" },
   "adrian@gennial.ai": { name: "Adrian", role: "CEO", pass: "gennial2026" },
+}
+
+// CRM Types
+
+export interface CRMCompany {
+  id: string
+  name: string
+  website?: string
+  linkedin_url?: string
+  instagram_handle?: string
+  location?: string
+  country?: string
+  industry?: string
+  company_size?: '10-50' | '50-200' | '200-1000' | '1000+'
+  description?: string
+  research_notes?: any
+  pain_points?: string
+  opportunities?: string
+  impact?: number
+  urgency?: number
+  deal_potential?: 'high' | 'medium' | 'low'
+  status: 'prospect' | 'qualified' | 'contacted' | 'negotiation' | 'won' | 'lost' | 'archived'
+  source?: 'linkedin' | 'referral' | 'event' | 'outbound'
+  created_by: string
+  created_at: string
+  updated_at: string
+  archived_at?: string | null
+}
+
+export interface CRMContact {
+  id: string
+  company_id: string
+  first_name: string
+  last_name: string
+  email?: string
+  phone?: string
+  linkedin_url?: string
+  job_title?: string
+  seniority?: 'c-level' | 'vp' | 'director' | 'manager' | 'individual'
+  department?: 'marketing' | 'sales' | 'product' | 'operations' | 'executive'
+  is_decision_maker?: boolean
+  influence_level?: number
+  bio?: string
+  interests?: any
+  recent_posts?: string
+  last_contact_date?: string
+  contact_count?: number
+  response_rate?: 'high' | 'medium' | 'low' | 'none'
+  impact?: number
+  urgency?: number
+  created_by: string
+  created_at: string
+  archived_at?: string | null
+}
+
+export interface CRMDeal {
+  id: string
+  company_id: string
+  primary_contact_id?: string
+  title: string
+  description?: string
+  deal_type: 'client' | 'investor' | 'partner' | 'other'
+  value_currency?: string
+  value_amount_min?: number
+  value_amount_max?: number
+  value_period?: 'one-time' | 'monthly' | 'yearly'
+  stage: 'lead' | 'qualified' | 'meeting_scheduled' | 'proposal_sent' | 'negotiation' | 'won' | 'lost' | 'archived'
+  probability?: number
+  expected_close_date?: string
+  actual_close_date?: string
+  impact?: number
+  urgency?: number
+  assigned_to?: string
+  created_by: string
+  created_at: string
+  archived_at?: string | null
+}
+
+export interface CRMUpdate {
+  id: string
+  company_id?: string
+  contact_id?: string
+  deal_id?: string
+  update_type: 'research' | 'outreach_sent' | 'response_received' | 'meeting_scheduled' | 'meeting_completed' | 'proposal_sent' | 'proposal_viewed' | 'negotiation' | 'objection' | 'follow_up' | 'status_change' | 'note'
+  content: string
+  outcome?: string
+  email_opened?: boolean
+  email_clicked?: boolean
+  linkedin_post_interaction?: 'liked' | 'commented' | 'shared' | 'none'
+  next_action?: string
+  next_action_date?: string
+  created_by: string
+  created_at: string
+  archived_at?: string | null
+}
+
+export interface CRMActivity {
+  id: string
+  company_id?: string
+  contact_id?: string
+  deal_id?: string
+  activity_type: 'email' | 'linkedin_message' | 'linkedin_comment' | 'call' | 'video_call' | 'meeting' | 'event' | 'other'
+  direction?: 'outbound' | 'inbound'
+  subject?: string
+  content?: string
+  notes?: string
+  status?: 'scheduled' | 'completed' | 'cancelled' | 'no_show'
+  result?: 'positive' | 'neutral' | 'negative' | 'no_response'
+  follow_up_needed?: boolean
+  follow_up_date?: string
+  created_by: string
+  created_at: string
+  archived_at?: string | null
+}
+
+// Learnings Type
+export interface Learning {
+  id: string
+  title: string
+  category: 'what_worked' | 'what_didnt_work' | 'insight' | 'mistake'
+  source_type: 'task' | 'project' | 'experiment' | 'conversation' | 'research' | 'other'
+  source_id?: string
+  content: string
+  context?: string
+  tags?: string[]
+  actionable: boolean
+  action_items?: string[]
+  replicable: boolean
+  applicable_to?: string[]
+  impact_score?: number
+  created_by: string
+  created_at: string
+  archived_at?: string | null
 }
 
 // Priority score calculation: impact × urgency (1-25)
