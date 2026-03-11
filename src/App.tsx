@@ -11,6 +11,7 @@ import { Documents } from "@/pages/Documents"
 import { Backoffice } from "@/pages/Backoffice"
 import { ActivityLog } from "@/pages/ActivityLog"
 import LinkedInDashboard from "@/pages/LinkedInDashboard"
+import { Agents } from "@/pages/Agents"
 import type { Page, User, Project, Feature, Task, Proposal, Activity, CRMCompany, CRMContact, CRMDeal, CRMUpdate, CRMActivity } from "@/types"
 
 export default function App() {
@@ -106,6 +107,7 @@ export default function App() {
         {page === "backoffice" && <Backoffice currentUser={user} />}
         {page === "activity" && <ActivityLog activities={activities} />}
         {page === "linkedin" && <LinkedInDashboard />}
+        {page === "agents" && <Agents />}
       </main>
     </div>
   )

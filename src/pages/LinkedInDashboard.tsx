@@ -60,31 +60,40 @@ export default function LinkedInDashboard() {
     setError(null);
     
     try {
+      console.log('[LinkedIn Dashboard] Loading data...');
+      
       // Load posts
+      console.log('[LinkedIn Dashboard] Fetching posts...');
       const { data: postsData, error: postsError } = await supabase
         .from('linkedin_posts')
         .select('*')
         .order('posted_at', { ascending: false });
       
+      console.log('[LinkedIn Dashboard] Posts result:', { data: postsData, error: postsError });
       if (postsError) throw new Error(`Posts: ${postsError.message}`);
       
       // Load outreach
+      console.log('[LinkedIn Dashboard] Fetching outreach...');
       const { data: outreachData, error: outreachError } = await supabase
         .from('linkedin_outreach')
         .select('*')
         .order('sent_at', { ascending: false });
       
+      console.log('[LinkedIn Dashboard] Outreach result:', { data: outreachData, error: outreachError });
       if (outreachError) throw new Error(`Outreach: ${outreachError.message}`);
       
       // Load calendar
+      console.log('[LinkedIn Dashboard] Fetching calendar...');
       const { data: calendarData, error: calendarError } = await supabase
         .from('linkedin_calendar')
         .select('*')
         .order('scheduled_date', { ascending: true });
       
+      console.log('[LinkedIn Dashboard] Calendar result:', { data: calendarData, error: calendarError });
       if (calendarError) throw new Error(`Calendar: ${calendarError.message}`);
       
       // Load metrics
+      console.log('[LinkedIn Dashboard] Fetching metrics...');
       const { data: metricsData, error: metricsError } = await supabase
         .from('linkedin_metrics')
         .select('*')
@@ -92,14 +101,22 @@ export default function LinkedInDashboard() {
         .limit(1)
         .single();
       
+      console.log('[LinkedIn Dashboard] Metrics result:', { data: metricsData, error: metricsError });
       if (metricsError && metricsError.code !== 'PGRST116') throw new Error(`Metrics: ${metricsError.message}`);
+      
+      console.log('[LinkedIn Dashboard] Setting state:', {
+        posts: postsData?.length || 0,
+        outreach: outreachData?.length || 0,
+        calendar: calendarData?.length || 0,
+        metrics: metricsData ? 'yes' : 'no'
+      });
       
       setPosts(postsData || []);
       setOutreach(outreachData || []);
       setCalendar(calendarData || []);
       setMetrics(metricsData);
     } catch (err) {
-      console.error('LinkedIn data load error:', err);
+      console.error('[LinkedIn Dashboard] Error loading data:', err);
       setError(err instanceof Error ? err.message : 'Error loading data');
     } finally {
       setLoading(false);
@@ -119,7 +136,29 @@ export default function LinkedInDashboard() {
   };
 
   if (loading) {
-    return <div className="p-8 text-center">Cargando...</div>;
+    return (
+      <div className="p-8 text-center">
+        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
+        <p className="text-gray-600">Cargando datos de LinkedIn...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-8">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <h3 className="text-red-800 font-semibold mb-2">Error al cargar datos</h3>
+          <p className="text-red-600">{error}</p>
+          <button 
+            onClick={loadData}
+            className="mt-3 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+          >
+            Reintentar
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -199,99 +238,120 @@ export default function LinkedInDashboard() {
           {/* Calendar Tab */}
           {activeTab === 'calendar' && (
             <div className="space-y-4">
-              <h3 className="font-semibold text-lg">Calendario de Contenido</h3>
-              <div className="grid gap-4">
-                {calendar.map((item) => (
-                  <div key={item.id} className="border rounded-lg p-4 hover:bg-gray-50">
-                    <div className="flex justify-between items-start mb-2">
-                      <span className="text-sm font-medium text-gray-500">
-                        {new Date(item.scheduled_date).toLocaleDateString('es-AR', {
-                          weekday: 'long',
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric'
-                        })}
-                      </span>
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(item.status)}`}>
-                        {item.status}
-                      </span>
+              <h3 className="font-semibold text-lg">Calendario de Contenido ({calendar.length})</h3>
+              {calendar.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <Calendar className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                  <p>No hay eventos en el calendario</p>
+                </div>
+              ) : (
+                <div className="grid gap-4">
+                  {calendar.map((item) => (
+                    <div key={item.id} className="border rounded-lg p-4 hover:bg-gray-50">
+                      <div className="flex justify-between items-start mb-2">
+                        <span className="text-sm font-medium text-gray-500">
+                          {new Date(item.scheduled_date).toLocaleDateString('es-AR', {
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                          })}
+                        </span>
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(item.status)}`}>
+                          {item.status}
+                        </span>
+                      </div>
+                      <p className="text-gray-900 font-medium">{item.theme}</p>
+                      <p className="text-gray-600 text-sm mt-1 line-clamp-2">{item.content_draft}</p>
                     </div>
-                    <p className="text-gray-900 font-medium">{item.theme}</p>
-                    <p className="text-gray-600 text-sm mt-1 line-clamp-2">{item.content_draft}</p>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
           {/* Posts Tab */}
           {activeTab === 'posts' && (
             <div className="space-y-4">
-              <h3 className="font-semibold text-lg">Posts Publicados</h3>
-              <div className="grid gap-4">
-                {posts.map((post) => (
-                  <div key={post.id} className="border rounded-lg p-4 hover:bg-gray-50">
-                    <div className="flex justify-between items-start mb-2">
-                      <span className="text-sm text-gray-500">
-                        {new Date(post.posted_at).toLocaleDateString('es-AR')}
-                      </span>
-                      <span className="text-xs text-gray-400">{post.theme}</span>
-                    </div>
-                    <p className="text-gray-900 mb-3 line-clamp-3">{post.content}</p>
-                    <div className="flex gap-4 text-sm text-gray-500">
-                      <span>👁 {post.impressions} impresiones</span>
-                      <span>👍 {post.reactions} reacciones</span>
-                      <span>💬 {post.comments} comentarios</span>
-                    </div>
-                    {post.hashtags && post.hashtags.length > 0 && (
-                      <div className="mt-2 flex flex-wrap gap-1">
-                        {post.hashtags.map((tag) => (
-                          <span key={tag} className="text-xs text-blue-600">{tag}</span>
-                        ))}
+              <h3 className="font-semibold text-lg">Posts Publicados ({posts.length})</h3>
+              {posts.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <MessageSquare className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                  <p>No hay posts publicados</p>
+                </div>
+              ) : (
+                <div className="grid gap-4">
+                  {posts.map((post) => (
+                    <div key={post.id} className="border rounded-lg p-4 hover:bg-gray-50">
+                      <div className="flex justify-between items-start mb-2">
+                        <span className="text-sm text-gray-500">
+                          {new Date(post.posted_at).toLocaleDateString('es-AR')}
+                        </span>
+                        <span className="text-xs text-gray-400">{post.theme}</span>
                       </div>
-                    )}
-                  </div>
-                ))}
-              </div>
+                      <p className="text-gray-900 mb-3 line-clamp-3">{post.content}</p>
+                      <div className="flex gap-4 text-sm text-gray-500">
+                        <span>👁 {post.impressions} impresiones</span>
+                        <span>👍 {post.reactions} reacciones</span>
+                        <span>💬 {post.comments} comentarios</span>
+                      </div>
+                      {post.hashtags && post.hashtags.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-1">
+                          {post.hashtags.map((tag) => (
+                            <span key={tag} className="text-xs text-blue-600">{tag}</span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
           {/* Outreach Tab */}
           {activeTab === 'outreach' && (
             <div className="space-y-4">
-              <h3 className="font-semibold text-lg">Outreach a Leads</h3>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50 border-b">
-                    <tr>
-                      <th className="text-left py-2 px-3 text-sm font-medium text-gray-500">Nombre</th>
-                      <th className="text-left py-2 px-3 text-sm font-medium text-gray-500">Empresa</th>
-                      <th className="text-left py-2 px-3 text-sm font-medium text-gray-500">Cargo</th>
-                      <th className="text-left py-2 px-3 text-sm font-medium text-gray-500">Tamaño</th>
-                      <th className="text-left py-2 px-3 text-sm font-medium text-gray-500">Estado</th>
-                      <th className="text-left py-2 px-3 text-sm font-medium text-gray-500">Fecha</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y">
-                    {outreach.map((item) => (
-                      <tr key={item.id} className="hover:bg-gray-50">
-                        <td className="py-2 px-3 text-sm">{item.recipient_name}</td>
-                        <td className="py-2 px-3 text-sm text-gray-600">{item.recipient_company || '-'}</td>
-                        <td className="py-2 px-3 text-sm text-gray-600">{item.recipient_title || '-'}</td>
-                        <td className="py-2 px-3 text-sm text-gray-600">{item.company_size || '-'}</td>
-                        <td className="py-2 px-3">
-                          <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(item.status)}`}>
-                            {item.status}
-                          </span>
-                        </td>
-                        <td className="py-2 px-3 text-sm text-gray-500">
-                          {new Date(item.sent_at).toLocaleDateString('es-AR')}
-                        </td>
+              <h3 className="font-semibold text-lg">Outreach a Leads ({outreach.length})</h3>
+              {outreach.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <Users className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                  <p>No hay outreach registrado</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 border-b">
+                      <tr>
+                        <th className="text-left py-2 px-3 text-sm font-medium text-gray-500">Nombre</th>
+                        <th className="text-left py-2 px-3 text-sm font-medium text-gray-500">Empresa</th>
+                        <th className="text-left py-2 px-3 text-sm font-medium text-gray-500">Cargo</th>
+                        <th className="text-left py-2 px-3 text-sm font-medium text-gray-500">Tamaño</th>
+                        <th className="text-left py-2 px-3 text-sm font-medium text-gray-500">Estado</th>
+                        <th className="text-left py-2 px-3 text-sm font-medium text-gray-500">Fecha</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody className="divide-y">
+                      {outreach.map((item) => (
+                        <tr key={item.id} className="hover:bg-gray-50">
+                          <td className="py-2 px-3 text-sm">{item.recipient_name}</td>
+                          <td className="py-2 px-3 text-sm text-gray-600">{item.recipient_company || '-'}</td>
+                          <td className="py-2 px-3 text-sm text-gray-600">{item.recipient_title || '-'}</td>
+                          <td className="py-2 px-3 text-sm text-gray-600">{item.company_size || '-'}</td>
+                          <td className="py-2 px-3">
+                            <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(item.status)}`}>
+                              {item.status}
+                            </span>
+                          </td>
+                          <td className="py-2 px-3 text-sm text-gray-500">
+                            {new Date(item.sent_at).toLocaleDateString('es-AR')}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           )}
 
@@ -299,7 +359,12 @@ export default function LinkedInDashboard() {
           {activeTab === 'metrics' && (
             <div className="space-y-4">
               <h3 className="font-semibold text-lg">Métricas Semanales</h3>
-              {metrics && (
+              {!metrics ? (
+                <div className="text-center py-8 text-gray-500">
+                  <BarChart3 className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                  <p>No hay métricas disponibles</p>
+                </div>
+              ) : (
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-blue-50 p-4 rounded-lg">
                     <p className="text-sm text-gray-600">Semana</p>

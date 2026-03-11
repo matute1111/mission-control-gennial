@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils"
 import type { Page, User } from "@/types"
-import { LayoutDashboard, FolderKanban, CheckSquare, MessageCircle, Activity, LogOut, Menu, X, Bot, Mail, Linkedin, Github, Briefcase, Shield, FileText } from "lucide-react"
+import { LayoutDashboard, FolderKanban, CheckSquare, MessageCircle, Activity, LogOut, Menu, X, Bot, Mail, Linkedin, Github, Briefcase, Shield, FileText, Terminal } from "lucide-react"
 import { useState } from "react"
 
 interface SidebarProps {
@@ -20,6 +20,7 @@ const getNavItems = (isAdmin: boolean): { key: Page; label: string; icon: typeof
     { key: "crm" as Page, label: "CRM", icon: Briefcase },
     { key: "linkedin" as Page, label: "LinkedIn", icon: Linkedin },
     { key: "documents" as Page, label: "Documentos", icon: FileText },
+    { key: "agents" as Page, label: "Agentes", icon: Terminal },
     { key: "activity" as Page, label: "Actividad", icon: Activity },
   ]
   

@@ -1,4 +1,4 @@
-export type Page = "dashboard" | "projects" | "tasks" | "proposals" | "crm" | "documents" | "backoffice" | "activity" | "linkedin"
+export type Page = "dashboard" | "projects" | "tasks" | "proposals" | "crm" | "documents" | "backoffice" | "activity" | "linkedin" | "agents"
 
 export interface User {
   id?: string
