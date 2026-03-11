@@ -49,6 +49,7 @@ export default function LinkedInDashboard() {
   const [metrics, setMetrics] = useState<LinkedInMetrics | null>(null);
   const [activeTab, setActiveTab] = useState<'calendar' | 'posts' | 'outreach' | 'metrics'>('calendar');
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
@@ -56,38 +57,53 @@ export default function LinkedInDashboard() {
 
   async function loadData() {
     setLoading(true);
+    setError(null);
     
-    // Load posts
-    const { data: postsData } = await supabase
-      .from('linkedin_posts')
-      .select('*')
-      .order('posted_at', { ascending: false });
-    
-    // Load outreach
-    const { data: outreachData } = await supabase
-      .from('linkedin_outreach')
-      .select('*')
-      .order('sent_at', { ascending: false });
-    
-    // Load calendar
-    const { data: calendarData } = await supabase
-      .from('linkedin_calendar')
-      .select('*')
-      .order('scheduled_date', { ascending: true });
-    
-    // Load metrics
-    const { data: metricsData } = await supabase
-      .from('linkedin_metrics')
-      .select('*')
-      .order('week_start', { ascending: false })
-      .limit(1)
-      .single();
-    
-    setPosts(postsData || []);
-    setOutreach(outreachData || []);
-    setCalendar(calendarData || []);
-    setMetrics(metricsData);
-    setLoading(false);
+    try {
+      // Load posts
+      const { data: postsData, error: postsError } = await supabase
+        .from('linkedin_posts')
+        .select('*')
+        .order('posted_at', { ascending: false });
+      
+      if (postsError) throw new Error(`Posts: ${postsError.message}`);
+      
+      // Load outreach
+      const { data: outreachData, error: outreachError } = await supabase
+        .from('linkedin_outreach')
+        .select('*')
+        .order('sent_at', { ascending: false });
+      
+      if (outreachError) throw new Error(`Outreach: ${outreachError.message}`);
+      
+      // Load calendar
+      const { data: calendarData, error: calendarError } = await supabase
+        .from('linkedin_calendar')
+        .select('*')
+        .order('scheduled_date', { ascending: true });
+      
+      if (calendarError) throw new Error(`Calendar: ${calendarError.message}`);
+      
+      // Load metrics
+      const { data: metricsData, error: metricsError } = await supabase
+        .from('linkedin_metrics')
+        .select('*')
+        .order('week_start', { ascending: false })
+        .limit(1)
+        .single();
+      
+      if (metricsError && metricsError.code !== 'PGRST116') throw new Error(`Metrics: ${metricsError.message}`);
+      
+      setPosts(postsData || []);
+      setOutreach(outreachData || []);
+      setCalendar(calendarData || []);
+      setMetrics(metricsData);
+    } catch (err) {
+      console.error('LinkedIn data load error:', err);
+      setError(err instanceof Error ? err.message : 'Error loading data');
+    } finally {
+      setLoading(false);
+    }
   }
 
   const getStatusColor = (status: string) => {
