@@ -10,7 +10,7 @@ import { CRM } from "@/pages/CRM"
 import { Documents } from "@/pages/Documents"
 import { Backoffice } from "@/pages/Backoffice"
 import { ActivityLog } from "@/pages/ActivityLog"
-import { LinkedInDashboard } from "@/pages/LinkedInDashboard"
+import LinkedInDashboard from "@/pages/LinkedInDashboard"
 import type { Page, User, Project, Feature, Task, Proposal, Activity, CRMCompany, CRMContact, CRMDeal, CRMUpdate, CRMActivity } from "@/types"
 
 export default function App() {
