@@ -18,6 +18,7 @@ const getNavItems = (isAdmin: boolean): { key: Page; label: string; icon: typeof
     { key: "tasks" as Page, label: "Tareas", icon: CheckSquare },
     { key: "proposals" as Page, label: "Proposals", icon: MessageCircle },
     { key: "crm" as Page, label: "CRM", icon: Briefcase },
+    { key: "linkedin" as Page, label: "LinkedIn", icon: Linkedin },
     { key: "documents" as Page, label: "Documentos", icon: FileText },
     { key: "activity" as Page, label: "Actividad", icon: Activity },
   ]

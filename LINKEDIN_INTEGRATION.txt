@@ -1,0 +1,16 @@
+// AGREGAR AL PRINCIPIO DE App.tsx (después de los imports existentes):
+import { LinkedInDashboard } from "@/pages/LinkedInDashboard"
+
+// AGREGAR AL TIPO Page en types.ts (si existe):
+// export type Page = "dashboard" | "projects" | "tasks" | "proposals" | "crm" | "documents" | "backoffice" | "activity" | "linkedin"
+
+// AGREGAR EN EL MAIN de App.tsx (después de las otras páginas):
+{page === "linkedin" && <LinkedInDashboard />}
+
+// AGREGAR EN Sidebar.tsx (donde están los otros links):
+{
+  id: "linkedin",
+  label: "LinkedIn",
+  icon: Linkedin,  // import { Linkedin } from "lucide-react"
+  badge: undefined
+}
